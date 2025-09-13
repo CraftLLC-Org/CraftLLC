@@ -210,78 +210,51 @@
     </section>
 
     <script>
-        // Функція для перевірки сесії користувача
+        // Функція для перевірки сесії користувача та рендерингу кнопок
         async function checkUserSession() {
             const authContainer = document.getElementById('authContainer');
             authContainer.innerHTML = ''; // Очищаємо контейнер
+            
+            const token = localStorage.getItem('jwt_token');
 
-            try {
-                const response = await fetch('/api/user', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (response.ok) {
-                    const userData = await response.json();
-                    if (userData && userData.username) {
-                        // Користувач авторизований
-                        const profileInfoDiv = document.createElement('div');
-                        profileInfoDiv.className = 'profile-info';
-                        profileInfoDiv.onclick = toggleProfileDropdown;
-
-                        const avatarDiv = document.createElement('div');
-                        avatarDiv.className = 'avatar';
-                        avatarDiv.textContent = userData.username.charAt(0).toUpperCase();
-                        profileInfoDiv.appendChild(avatarDiv);
-
-                        const usernameSpan = document.createElement('span');
-                        usernameSpan.textContent = userData.username;
-                        profileInfoDiv.appendChild(usernameSpan);
-
-                        authContainer.appendChild(profileInfoDiv);
-
-                        const profileDropdownDiv = document.createElement('div');
-                        profileDropdownDiv.className = 'profile-dropdown';
-                        profileDropdownDiv.id = 'profileDropdown';
-
-                        const nameP = document.createElement('p');
-                        nameP.textContent = `Ім'я користувача: ${userData.username}`;
-                        profileDropdownDiv.appendChild(nameP);
-
-                        if (userData.name) {
-                            const realNameP = document.createElement('p');
-                            realNameP.textContent = `Справжнє ім'я: ${userData.name} ${userData.surname}`;
-                            profileDropdownDiv.appendChild(realNameP);
+            if (token) {
+                try {
+                    const response = await fetch('/api/user', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}` // Використання JWT
                         }
-
-                        const accountButton = document.createElement('button');
-                        accountButton.className = 'auth-button account-btn';
-                        accountButton.textContent = 'Мій акаунт';
-                        accountButton.onclick = () => window.location.href = '/account';
-                        profileDropdownDiv.appendChild(accountButton);
-
-                        const logoutButton = document.createElement('button');
-                        logoutButton.textContent = 'Вийти';
-                        logoutButton.onclick = logoutUser;
-                        profileDropdownDiv.appendChild(logoutButton);
-
-                        authContainer.appendChild(profileDropdownDiv);
+                    });
+                    
+                    if (response.ok) {
+                        const userData = await response.json();
+                        if (userData && userData.username) {
+                            // Користувач авторизований, рендеримо профіль
+                            renderProfileInfo(userData);
+                        } else {
+                            // Токен недійсний або помилка, видаляємо токен
+                            localStorage.removeItem('jwt_token');
+                            renderAuthButtons();
+                        }
                     } else {
-                        // Користувач не авторизований
+                        // Сервер повернув помилку (наприклад, 401 Unauthorized), видаляємо токен
+                        localStorage.removeItem('jwt_token');
                         renderAuthButtons();
                     }
-                } else {
-                    // Сервер повернув помилку або користувач не авторизований
+                } catch (error) {
+                    // Помилка мережі, видаляємо токен
+                    console.error('Помилка перевірки сесії:', error);
+                    localStorage.removeItem('jwt_token');
                     renderAuthButtons();
                 }
-            } catch (error) {
-                console.error('Помилка перевірки сесії:', error);
+            } else {
+                // Токен відсутній, рендеримо кнопки авторизації
                 renderAuthButtons();
             }
         }
 
+        // Функція для відображення кнопок "Увійти" та "Зареєструватися"
         function renderAuthButtons() {
             const authContainer = document.getElementById('authContainer');
             authContainer.innerHTML = `
@@ -290,6 +263,61 @@
             `;
         }
 
+        // Функція для відображення інформації профілю
+        function renderProfileInfo(userData) {
+            const authContainer = document.getElementById('authContainer');
+            
+            const profileInfoDiv = document.createElement('div');
+            profileInfoDiv.className = 'profile-info';
+            profileInfoDiv.onclick = toggleProfileDropdown;
+
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'avatar';
+            if (userData.avatar_url) {
+                const avatarImg = document.createElement('img');
+                avatarImg.src = userData.avatar_url;
+                avatarImg.alt = 'User Avatar';
+                avatarDiv.appendChild(avatarImg);
+            } else {
+                avatarDiv.textContent = userData.username.charAt(0).toUpperCase();
+            }
+            profileInfoDiv.appendChild(avatarDiv);
+
+            const usernameSpan = document.createElement('span');
+            usernameSpan.textContent = userData.username;
+            profileInfoDiv.appendChild(usernameSpan);
+
+            authContainer.appendChild(profileInfoDiv);
+
+            const profileDropdownDiv = document.createElement('div');
+            profileDropdownDiv.className = 'profile-dropdown';
+            profileDropdownDiv.id = 'profileDropdown';
+
+            const nameP = document.createElement('p');
+            nameP.textContent = `Ім'я користувача: ${userData.username}`;
+            profileDropdownDiv.appendChild(nameP);
+
+            if (userData.name) {
+                const realNameP = document.createElement('p');
+                realNameP.textContent = `Справжнє ім'я: ${userData.name}`;
+                profileDropdownDiv.appendChild(realNameP);
+            }
+
+            const accountButton = document.createElement('button');
+            accountButton.className = 'auth-button account-btn';
+            accountButton.textContent = 'Мій акаунт';
+            accountButton.onclick = () => window.location.href = '/account';
+            profileDropdownDiv.appendChild(accountButton);
+
+            const logoutButton = document.createElement('button');
+            logoutButton.textContent = 'Вийти';
+            logoutButton.onclick = logoutUser;
+            profileDropdownDiv.appendChild(logoutButton);
+
+            authContainer.appendChild(profileDropdownDiv);
+        }
+
+        // Функція для перемикання випадаючого меню профілю
         function toggleProfileDropdown() {
             const dropdown = document.getElementById('profileDropdown');
             if (dropdown) {
@@ -297,6 +325,7 @@
             }
         }
 
+        // Обробник кліку поза випадаючим меню для його закриття
         document.addEventListener('click', (event) => {
             const authContainer = document.getElementById('authContainer');
             const dropdown = document.getElementById('profileDropdown');
@@ -305,27 +334,62 @@
             }
         });
 
-        async function logoutUser() {
+        // Функція для виходу користувача
+        function logoutUser() {
+            localStorage.removeItem('jwt_token'); // Видалення токена
+            window.location.reload(); // Перезавантаження сторінки
+        }
+
+        // =========================================================
+        // Логіка для сторінки акаунта
+        // =========================================================
+        async function renderAccountPage() {
+            const token = localStorage.getItem('jwt_token');
+            if (!token) {
+                window.location.href = '/login'; // Перенаправлення, якщо немає токена
+                return;
+            }
+
             try {
-                const response = await fetch('/api/logout', {
-                    method: 'POST',
+                const response = await fetch('/api/user', {
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Authorization': `Bearer ${token}` // Використання JWT
                     }
                 });
+
                 if (response.ok) {
-                    window.location.reload();
+                    const user = await response.json();
+                    document.body.innerHTML = `
+                        <div class="account-page visible">
+                            <h2>Особистий кабінет</h2>
+                            <p><b>Ім'я користувача:</b> ${user.username}</p>
+                            <p><b>Ім'я:</b> ${user.name}</p>
+                            <p><b>Прізвище:</b> ${user.surname}</p>
+                            <p><b>Електронна пошта:</b> ${user.email}</p>
+                            <br>
+                            <a href="/" class="auth-button">На головну</a>
+                            <br><br>
+                            <button onclick="logoutUser()">Вийти</button>
+                        </div>
+                    `;
                 } else {
-                    alert('Помилка при виході. Спробуйте ще раз.');
-                    console.error('Помилка виходу:', await response.text());
+                    // Токен недійсний, перенаправляємо
+                    localStorage.removeItem('jwt_token');
+                    window.location.href = '/login';
                 }
             } catch (error) {
-                alert('Помилка мережі при виході. Перевірте з\'єднання.');
-                console.error('Помилка мережі при виході:', error);
+                console.error("Помилка завантаження даних акаунта:", error);
+                localStorage.removeItem('jwt_token');
+                window.location.href = '/login';
             }
         }
 
-        document.addEventListener('DOMContentLoaded', checkUserSession);
+        // Викликаємо відповідну функцію залежно від шляху
+        if (window.location.pathname === '/account') {
+            document.addEventListener('DOMContentLoaded', renderAccountPage);
+        } else {
+            document.addEventListener('DOMContentLoaded', checkUserSession);
+        }
     </script>
 
     <script>
