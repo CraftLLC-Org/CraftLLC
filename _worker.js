@@ -1,5 +1,5 @@
 import { neon } from '@neondatabase/serverless';
-import * as argon2 from 'argon2';
+import * as argon2 from '@node-rs/argon2';
 
 let isDbSetup = false;
 
