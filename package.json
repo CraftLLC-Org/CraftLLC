@@ -6,8 +6,8 @@
   "main": "_worker.js",
   "dependencies": {
     "@neondatabase/serverless": "^0.9.4",
-    "@node-rs/argon2": "^1.8.3",
-    "@node-rs/argon2-wasm32-wasi": "^1.8.3"
+    "bcryptjs": "^2.4.3",
+    "@tsndr/cloudflare-worker-jwt": "^2.1.0"
   },
   "devDependencies": {
     "wrangler": "^3.101.0"
