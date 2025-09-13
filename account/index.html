@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мій акаунт — CraftLLC</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <style>
+        body {
+            background: #141414;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+        }
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: auto;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: none;
+            box-sizing: border-box;
+        }
+        input {
+            background: #333;
+            color: white;
+        }
+        button {
+            background: linear-gradient(to right, #FFA600, #FFBB00);
+            color: #212121;
+            cursor: pointer;
+        }
+        #deleteAccountBtn {
+            background: linear-gradient(to right, #FF4500, #FF6347);
+            color: white;
+        }
+        .input-group {
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Мій акаунт</h1>
+        <form id="profileForm">
+            <div class="input-group">
+                <label for="username">Юзернейм:</label>
+                <input type="text" id="username" readonly>
+            </div>
+            <div class="input-group">
+                <label for="name">Ім'я:</label>
+                <input type="text" id="name">
+            </div>
+            <div class="input-group">
+                <label for="surname">Прізвище:</label>
+                <input type="text" id="surname">
+            </div>
+            <div class="input-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email">
+            </div>
+            <div class="input-group">
+                <label for="new_password">Новий пароль:</label>
+                <input type="password" id="new_password" placeholder="Залиште порожнім, щоб не змінювати">
+            </div>
+            <button type="submit">Зберегти зміни</button>
+        </form>
+        <p id="message"></p>
+        <button id="deleteAccountBtn">Видалити акаунт</button>
+    </div>
+
+    <script>
+        const messageEl = document.getElementById('message');
+        const usernameInput = document.getElementById('username');
+        const nameInput = document.getElementById('name');
+        const surnameInput = document.getElementById('surname');
+        const emailInput = document.getElementById('email');
+        const newPasswordInput = document.getElementById('new_password');
+
+        // Fetch user data and populate form
+        async function fetchUserData() {
+            try {
+                const response = await fetch('/api/user');
+                if (response.ok) {
+                    const userData = await response.json();
+                    usernameInput.value = userData.username;
+                    nameInput.value = userData.name;
+                    surnameInput.value = userData.surname;
+                    emailInput.value = userData.email;
+                } else {
+                    window.location.href = '/login'; // Redirect if not logged in
+                }
+            } catch (error) {
+                console.error('Failed to fetch user data:', error);
+                window.location.href = '/login';
+            }
+        }
+        fetchUserData();
+
+        // Update profile form submission
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const updatedData = {
+                username: usernameInput.value,
+                name: nameInput.value,
+                surname: surnameInput.value,
+                email: emailInput.value,
+            };
+            if (newPasswordInput.value) {
+                updatedData.new_password = newPasswordInput.value;
+            }
+
+            try {
+                const response = await fetch('/api/profile/update', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedData)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    messageEl.textContent = 'Дані успішно оновлено!';
+                    messageEl.style.color = 'green';
+                    newPasswordInput.value = '';
+                } else {
+                    messageEl.textContent = data.error || 'Помилка оновлення.';
+                    messageEl.style.color = 'red';
+                }
+            } catch (error) {
+                messageEl.textContent = 'Помилка мережі. Спробуйте ще раз.';
+                messageEl.style.color = 'red';
+            }
+        });
+
+        // Delete account
+        document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+            if (confirm('Ви впевнені, що хочете видалити свій акаунт? Цю дію не можна скасувати.')) {
+                try {
+                    const response = await fetch('/api/account/delete', {
+                        method: 'DELETE'
+                    });
+                    if (response.ok) {
+                        alert('Акаунт успішно видалено.');
+                        window.location.href = '/';
+                    } else {
+                        const data = await response.json();
+                        alert(data.error || 'Помилка видалення акаунту.');
+                    }
+                } catch (error) {
+                    alert('Помилка мережі при видаленні акаунту.');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

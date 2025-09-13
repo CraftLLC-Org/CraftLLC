@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Увійти — CraftLLC</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <style>
+        body {
+            background: #141414;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+        }
+        .container {
+            width: 90%;
+            max-width: 400px;
+            margin: auto;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: none;
+            box-sizing: border-box;
+        }
+        input {
+            background: #333;
+            color: white;
+        }
+        button {
+            background: linear-gradient(to right, #FFA600, #FFBB00);
+            color: #212121;
+            cursor: pointer;
+        }
+        a {
+            color: #FFA600;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Увійти</h1>
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Юзернейм" required>
+            <input type="password" id="password" placeholder="Пароль" required>
+            <button type="submit">Увійти</button>
+        </form>
+        <p id="message"></p>
+        <p>Немає акаунту? <a href="/register">Зареєструватися</a></p>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const messageEl = document.getElementById('message');
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    messageEl.textContent = 'Успішний вхід!';
+                    messageEl.style.color = 'green';
+                    window.location.href = '/';
+                } else {
+                    messageEl.textContent = data.error || 'Помилка входу.';
+                    messageEl.style.color = 'red';
+                }
+            } catch (error) {
+                messageEl.textContent = 'Помилка мережі. Спробуйте ще раз.';
+                messageEl.style.color = 'red';
+                console.error('Login error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
