@@ -83,20 +83,20 @@
             text-decoration: none;
             color: white;
         }
-        .footer {
+        footer {
             margin: 0;
             padding: 40px 0;
             background-color: #161616;
             box-sizing: border-box;
             width: 100%;
         }
-        .footer .social {
+        footer .social {
             text-align: center;
             padding-bottom: 25px;
             font-size: 24px;
             text-decoration: none;
         }
-        .footer .social a {
+        footer .social a {
             border: 1px solid #ccc;
             border-radius: 30%;
             width: 40px;
@@ -107,19 +107,19 @@
             margin: 0 6px;
             opacity: 0.75;
         }
-        .footer .social a:hover {
+        footer .social a:hover {
             opacity: 1.0;
         }
-        .footer .social .fa-telegram {
+        footer .social .fa-telegram {
             color: #29a0dc;
         }
-        .footer .social .fa-youtube {
+        footer .social .fa-youtube {
             color: #ff0000;
         }
-        .footer .social .fa-instagram {
+        footer .social .fa-instagram {
             color: #e1306c;
         }
-        .footer .copyright {
+        footer .copyright {
             margin-top: 5px;
             text-align: center;
             font-size: 13px;
@@ -1561,7 +1561,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     </script>
     <br><br><br><br>
-    <section class="footer" id="footerID">
+    <footer id="footerID">
         <div class="social">
             <a href="https://t.me/CraftLLC" target="_blank"><i class="fab fa-telegram"></i></a>
             <a href="https://m.youtube.com/@CraftLLCOF" target="_blank"><i class="fab fa-youtube"></i></a>
@@ -1571,7 +1571,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
 
         <p class="copyright">© Андрій Рудик 2024-2025</p>
-    </section>
+    </footer>
     <script>
     const params = new URLSearchParams(window.location.search);
     if (params.get('mainPageView') === 'true') {
