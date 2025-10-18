@@ -116,7 +116,6 @@
             color: white;
             font-size: 24px;
             cursor: pointer;
-            padding: 10px;
             margin: 0;
         }
         footer {
@@ -344,6 +343,52 @@
             padding: 5px 10px;
             margin-left: 10px;
             font-size: 0.9em;
+        }
+        @media (max-width: 768px) {
+            /* Показуємо гамбургер-кнопку */
+            .menu-toggle {
+                display: block;
+            }
+
+            /* Приховуємо горизонтальне меню за замовчуванням */
+            .nav-menu {
+                display: none; 
+                position: absolute;
+                top: 60px; /* Висота хедера + невеликий відступ */
+                left: 0;
+                width: 100%;
+                background-color: #161616;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+                z-index: 1000;
+                text-align: left;
+            }
+
+            /* Меню, коли воно активне (показується) */
+            .nav-menu.active {
+                display: block;
+            }
+            
+            /* Робимо список вертикальним */
+            .nav-menu ul {
+                flex-direction: column; 
+                padding: 10px 5%;
+            }
+            
+            .nav-menu li {
+                margin: 0;
+            }
+            
+            /* Стилізуємо посилання як блок, щоб вони займали всю ширину */
+            .nav-menu a {
+                display: block;
+                padding: 10px 0;
+                border-bottom: 1px solid #222; 
+            }
+
+            /* Прибираємо нижню межу на останньому елементі */
+            .nav-menu li:last-child a {
+                border-bottom: none;
+            }
         }
     </style>
     <header>
