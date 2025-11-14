@@ -1090,6 +1090,8 @@ document.addEventListener("DOMContentLoaded", () => {
         recipe.ingredients.forEach(ingredientGroup => {
             if (ingredientGroup._name) {
                 ingredientsHtml += `<br>Інградієнти для ${ingredientGroup._name}:<br>`;
+            } else {
+                ingredientsHtml += `<br>Інградієнти:<br>`;
             }
             for (const [name, amount] of Object.entries(ingredientGroup)) {
                 if (name !== '_name') {

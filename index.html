@@ -422,7 +422,7 @@
                     if (iframe.contentWindow && iframe.contentWindow.document && iframe.contentWindow.document.body) {
                         const contentHeight = iframe.contentWindow.document.body.scrollHeight;
                         if (contentHeight > 0) {
-                            iframe.style.height = contentHeight + "px";
+                            iframe.style.height = (contentHeight + 20) + "px"; // Add a 20px buffer
                         }
                     }
                 } catch (e) {
@@ -531,8 +531,8 @@
     <h1>Головна</h1>
     <h1>QR-код</h1>
     <img src="/qr.png" alt="QR-код на цей сайт." width="256" height="256">
-    <iframe id="recipesIframe" src="/recipes?mainPageView=true" sandbox="allow-same-origin allow-scripts allow-popups"></iframe>
-    <iframe src="/contacts?mainPageView=true" sandbox="allow-same-origin allow-scripts allow-popups"></iframe>
+    <iframe id="recipesIframe" src="/recipes?mainPageView=true" sandbox="allow-same-origin allow-scripts allow-popups" scrolling="no"></iframe>
+    <iframe src="/contacts?mainPageView=true" sandbox="allow-same-origin allow-scripts allow-popups" scrolling="no"></iframe>
 
     <footer id="footerID">
         <div class="social">
