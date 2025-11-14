@@ -600,6 +600,36 @@ window.addEventListener('message', (event) => {
         // Викликаємо функції для оновлення відображення рецептів
         processRecipeCards();
         filterAndSortRecipes();
+    } else if (event.data && event.data.type === 'SUBMIT_CHEAT_CODE') {
+        const enteredCode = event.data.code;
+        let foundMatch = false;
+
+        document.querySelectorAll('.card').forEach((card, index) => {
+            const dateAttribute = card.dataset.date;
+            const cheatCodeAttribute = card.dataset.cheatcode ? card.dataset.cheatcode.toLowerCase() : null; // Convert to lowercase
+            const cardId = `card-${index}`;
+
+            if (dateAttribute && cheatCodeAttribute && enteredCode === cheatCodeAttribute) {
+                const [day, month, year] = dateAttribute.split('.').map(Number);
+                const releaseDate = new Date(year, month - 1, day);
+                const now = new Date();
+
+                if (now.getTime() < releaseDate.getTime()) {
+                    // If date has not passed, and cheat code matches
+                    cheatCodesUsed[cardId] = true; // Mark this card as bypassed
+                    saveCheatCodes(); // Save updated state
+                    foundMatch = true;
+                }
+            }
+        });
+
+        if (foundMatch) {
+            processRecipeCards();
+            filterAndSortRecipes();
+            parent.postMessage({ type: 'CHEAT_CODE_RESULT', success: true }, '*');
+        } else {
+            parent.postMessage({ type: 'CHEAT_CODE_RESULT', success: false }, '*');
+        }
     }
 });
 
