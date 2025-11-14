@@ -415,6 +415,13 @@
     </header>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "86e4717144d44d26a30bb98452c1e06b"}'></script>
     <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const loaderWrapper = document.getElementById('loader-wrapper');
+            if (loaderWrapper) {
+                loaderWrapper.style.display = 'none';
+            }
+        });
+
         function adjustAllIframesHeight() {
             const iframes = document.querySelectorAll("iframe");
             iframes.forEach(iframe => {
@@ -432,12 +439,20 @@
         }
 
         window.addEventListener("load", () => {
-            const loaderWrapper = document.getElementById('loader-wrapper');
-            if (loaderWrapper) {
-                loaderWrapper.style.display = 'none';
-            }
             adjustAllIframesHeight();
             setInterval(adjustAllIframesHeight, 500);
+        });
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'openCheatCodeModal') {
+                const cheatCodeModal = document.getElementById('cheatCodeModal');
+                const cheatCodeInput = document.getElementById('cheatCodeInput');
+                const modalMessage = document.getElementById('modalMessage');
+                
+                cheatCodeInput.value = '';
+                modalMessage.textContent = '';
+                cheatCodeModal.style.display = 'flex';
+            }
         });
 
         function setSpecialDateAssets() {
@@ -547,6 +562,18 @@
     </footer>
 
     <script>
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'openCheatCodeModal') {
+                const cheatCodeModal = document.getElementById('cheatCodeModal');
+                const cheatCodeInput = document.getElementById('cheatCodeInput');
+                const modalMessage = document.getElementById('modalMessage');
+                
+                cheatCodeInput.value = '';
+                modalMessage.textContent = '';
+                cheatCodeModal.style.display = 'flex';
+            }
+        });
+
         // Функція для перевірки сесії користувача
         async function checkUserSession() {
             const authContainer = document.getElementById('authContainer');

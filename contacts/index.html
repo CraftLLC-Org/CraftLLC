@@ -231,11 +231,20 @@
     <!-- End Cloudflare Web Analytics -->
 
     <script>
-    // Коли все завантажено – ховаємо лоадер
-    window.addEventListener('load', () => {
+    document.addEventListener("DOMContentLoaded", () => {
         const loaderWrapper = document.getElementById('loader-wrapper');
         if (loaderWrapper) {
             loaderWrapper.style.display = 'none';
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const isMainPageView = urlParams.get('mainPageView') === 'true';
+
+        if (isMainPageView) {
+            const loader = document.getElementById('loader-wrapper');
+            if (loader) {
+                loader.style.display = 'none';
+            }
         }
     });
 

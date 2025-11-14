@@ -625,30 +625,6 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="loader"></div>
     </div>
 
-    <!-- Cheat Code Modal -->
-    <div id="cheatCodeModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <h2>Введіть чит-код</h2>
-            <input type="text" id="cheatCodeInput" placeholder="Ваш чит-код">
-            <button id="submitCheatCode">Підтвердити</button>
-            <button id="cancelCheatCode">Скасувати</button>
-            <p id="modalMessage" class="modal-message"></p>
-        </div>
-    </div>
-
-    <!-- Active Cheat Codes Modal -->
-    <div id="activeCheatCodesModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <h2>Активні чит-коди</h2>
-            <div id="activeCheatCodesList" class="active-codes-list">
-                <!-- Active cheat codes will be rendered here -->
-            </div>
-            <br>
-            <button id="addCheatCodeBtn">Додати чит-код</button>
-            <button id="closeActiveCheatCodesModal">Закрити</button>
-        </div>
-    </div>
-
     <h1>Рецепти</h1>
     <h1>Список відтворення</h1>
     <a href="https://youtube.com/playlist?list=PL0xBJmae_beLTo8ZoxhZVAtAH1_AVBuWj&si=A3gNpVT4yGhvHVC" target="_blank"><button>Відкрити</button></a>
@@ -686,6 +662,14 @@ document.addEventListener("DOMContentLoaded", () => {
     let countdownIntervals = {}; // Object to store intervals for each card
     // Load cheat codes from localStorage or initialize empty
     let cheatCodesUsed = JSON.parse(localStorage.getItem('cheatCodesUsed')) || {};
+
+    const inIframe = () => {
+        try {
+            return window.self !== window.top;
+        } catch (e) {
+            return true;
+        }
+    }
 
     // Функція для збереження активних чит-кодів у localStorage
     function saveCheatCodes() {
@@ -1095,7 +1079,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             for (const [name, amount] of Object.entries(ingredientGroup)) {
                 if (name !== '_name') {
-                    ingredientsHtml += `${name} - ${amount}<br>`;
+                    ingredientsHtml += `${name} - ${amount || ''}<br>`;
                 }
             }
         });
@@ -1128,13 +1112,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Add double-click event listener
         card.addEventListener('dblclick', () => {
-            const cheatCodeModal = document.getElementById('cheatCodeModal');
-            const cheatCodeInput = document.getElementById('cheatCodeInput');
-            const modalMessage = document.getElementById('modalMessage');
-            
-            cheatCodeInput.value = '';
-            modalMessage.textContent = '';
-            cheatCodeModal.style.display = 'flex';
+            if (inIframe()) {
+                parent.postMessage({ type: 'openCheatCodeModal' }, '*');
+            } else {
+                const cheatCodeModal = document.getElementById('cheatCodeModal');
+                const cheatCodeInput = document.getElementById('cheatCodeInput');
+                const modalMessage = document.getElementById('modalMessage');
+                
+                cheatCodeInput.value = '';
+                modalMessage.textContent = '';
+                cheatCodeModal.style.display = 'flex';
+            }
         });
 
         return card;
@@ -1157,74 +1145,111 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     document.addEventListener("DOMContentLoaded", () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isMainPageView = urlParams.get('mainPageView') === 'true';
+
+        if (isMainPageView) {
+            const loader = document.getElementById('loader-wrapper');
+            if (loader) {
+                loader.style.display = 'none';
+            }
+        } else {
+            // If not in iframe, add the cheat code modal
+            const modalContainer = document.createElement('div');
+            modalContainer.innerHTML = `
+                <!-- Cheat Code Modal -->
+                <div id="cheatCodeModal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <h2>Введіть чит-код</h2>
+                        <input type="text" id="cheatCodeInput" placeholder="Ваш чит-код">
+                        <button id="submitCheatCode">Підтвердити</button>
+                        <button id="cancelCheatCode">Скасувати</button>
+                        <p id="modalMessage" class="modal-message"></p>
+                    </div>
+                </div>
+
+                <!-- Active Cheat Codes Modal -->
+                <div id="activeCheatCodesModal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <h2>Активні чит-коди</h2>
+                        <div id="activeCheatCodesList" class="active-codes-list">
+                            <!-- Active cheat codes will be rendered here -->
+                        </div>
+                        <br>
+                        <button id="addCheatCodeBtn">Додати чит-код</button>
+                        <button id="closeActiveCheatCodesModal">Закрити</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modalContainer);
+
+            const submitCheatCodeBtn = document.getElementById('submitCheatCode');
+            const cancelCheatCodeBtn = document.getElementById('cancelCheatCode');
+            const addCheatCodeBtn = document.getElementById('addCheatCodeBtn');
+            const closeActiveCheatCodesModal = document.getElementById('closeActiveCheatCodesModal');
+            const cheatCodeModal = document.getElementById('cheatCodeModal');
+            const activeCheatCodesModal = document.getElementById('activeCheatCodesModal');
+            const cheatCodeInput = document.getElementById('cheatCodeInput');
+            const modalMessage = document.getElementById('modalMessage');
+
+            submitCheatCodeBtn.addEventListener('click', () => {
+                const enteredCode = cheatCodeInput.value.trim().toLowerCase(); // Convert to lowercase
+                let foundMatch = false;
+
+                document.querySelectorAll('.card').forEach((card, index) => {
+                    const dateAttribute = card.dataset.date;
+                    const cheatCodeAttribute = card.dataset.cheatcode ? card.dataset.cheatcode.toLowerCase() : null; // Convert to lowercase
+                    const cardId = `card-${index}`;
+
+                    if (dateAttribute && cheatCodeAttribute && enteredCode === cheatCodeAttribute) {
+                        const [day, month, year] = dateAttribute.split('.').map(Number);
+                        const releaseDate = new Date(year, month - 1, day);
+                        const now = new Date();
+
+                        if (now.getTime() < releaseDate.getTime()) {
+                            // If date has not passed, and cheat code matches
+                            cheatCodesUsed[cardId] = true; // Mark this card as bypassed
+                            saveCheatCodes(); // Save updated state
+                            foundMatch = true;
+                        }
+                    }
+                });
+
+                if (foundMatch) {
+                    modalMessage.style.color = 'green';
+                    modalMessage.textContent = 'Чит-код прийнято! Рецепт розблоковано.';
+                    setTimeout(() => {
+                        cheatCodeModal.style.display = 'none';
+                        processRecipeCards(); // Re-process cards to update visibility
+                        filterAndSortRecipes(); // Re-filter and sort to update display
+                    }, 1500);
+                } else {
+                    modalMessage.style.color = 'red';
+                    modalMessage.textContent = 'Невірний чит-код або рецепт вже доступний.';
+                }
+            });
+
+            cancelCheatCodeBtn.addEventListener('click', () => {
+                cheatCodeModal.style.display = 'none';
+            });
+
+            addCheatCodeBtn.addEventListener('click', () => {
+                activeCheatCodesModal.style.display = 'none'; // Close active codes modal
+                cheatCodeModal.style.display = 'flex'; // Open cheat code input modal
+                cheatCodeInput.value = '';
+                modalMessage.textContent = '';
+            });
+
+            closeActiveCheatCodesModal.addEventListener('click', () => {
+                activeCheatCodesModal.style.display = 'none';
+            });
+        }
+
         console.log("DOMContentLoaded event fired.");
         const searchInput = document.getElementById('recipeSearch');
         const sortSelect = document.getElementById('recipeSort');
         const prevButton = document.getElementById('prev-page');
         const nextButton = document.getElementById('next-page');
-        const cheatCodeModal = document.getElementById('cheatCodeModal');
-        const cheatCodeInput = document.getElementById('cheatCodeInput');
-        const submitCheatCodeBtn = document.getElementById('submitCheatCode');
-        const cancelCheatCodeBtn = document.getElementById('cancelCheatCode');
-        const modalMessage = document.getElementById('modalMessage');
-
-        const activeCheatCodesModal = document.getElementById('activeCheatCodesModal');
-        const addCheatCodeBtn = document.getElementById('addCheatCodeBtn');
-        const closeActiveCheatCodesModal = document.getElementById('closeActiveCheatCodesModal');
-
-        submitCheatCodeBtn.addEventListener('click', () => {
-            const enteredCode = cheatCodeInput.value.trim().toLowerCase(); // Convert to lowercase
-            let foundMatch = false;
-
-            document.querySelectorAll('.card').forEach((card, index) => {
-                const dateAttribute = card.dataset.date;
-                const cheatCodeAttribute = card.dataset.cheatcode ? card.dataset.cheatcode.toLowerCase() : null; // Convert to lowercase
-                const cardId = `card-${index}`;
-
-                if (dateAttribute && cheatCodeAttribute && enteredCode === cheatCodeAttribute) {
-                    const [day, month, year] = dateAttribute.split('.').map(Number);
-                    const releaseDate = new Date(year, month - 1, day);
-                    const now = new Date();
-
-                    if (now.getTime() < releaseDate.getTime()) {
-                        // If date has not passed, and cheat code matches
-                        cheatCodesUsed[cardId] = true; // Mark this card as bypassed
-                        saveCheatCodes(); // Save updated state
-                        foundMatch = true;
-                    }
-                }
-            });
-
-            if (foundMatch) {
-                modalMessage.style.color = 'green';
-                modalMessage.textContent = 'Чит-код прийнято! Рецепт розблоковано.';
-                setTimeout(() => {
-                    cheatCodeModal.style.display = 'none';
-                    processRecipeCards(); // Re-process cards to update visibility
-                    filterAndSortRecipes(); // Re-filter and sort to update display
-                }, 1500);
-            } else {
-                modalMessage.style.color = 'red';
-                modalMessage.textContent = 'Невірний чит-код або рецепт вже доступний.';
-            }
-        });
-
-        cancelCheatCodeBtn.addEventListener('click', () => {
-            cheatCodeModal.style.display = 'none';
-        });
-
-        // Event listeners for the new modal buttons
-        addCheatCodeBtn.addEventListener('click', () => {
-            activeCheatCodesModal.style.display = 'none'; // Close active codes modal
-            cheatCodeModal.style.display = 'flex'; // Open cheat code input modal
-            cheatCodeInput.value = '';
-            modalMessage.textContent = '';
-        });
-
-        closeActiveCheatCodesModal.addEventListener('click', () => {
-            activeCheatCodesModal.style.display = 'none';
-        });
-
 
         // Load recipes and then initialize everything
         loadRecipes().then(() => {
@@ -1247,7 +1272,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        const urlParams = new URLSearchParams(window.location.search);
         const isLight = urlParams.get('light') === 'true';
 
         if (isLight) {
