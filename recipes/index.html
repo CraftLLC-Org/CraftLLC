@@ -1118,7 +1118,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (recipe.properties) {
             propertiesHtml += '<br>Властивості:<br>';
             if (recipe.properties.temperature) {
-                propertiesHtml += `Температура: ${recipe.properties.temperature}<br>`;
+                const temp = String(recipe.properties.temperature);
+                if (/^[\d-]+$/.test(temp)) {
+                    propertiesHtml += `Температура: ${temp}°C<br>`;
+                } else {
+                    propertiesHtml += `Температура: ${temp}<br>`;
+                }
             }
             if (recipe.properties.time) {
                 propertiesHtml += `Час: ${recipe.properties.time}<br>`;
