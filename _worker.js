@@ -155,14 +155,13 @@ async function handleApiRequest(request, env, url) {
     
     const { data, error } = await supabase
       .from('comments')
-      .select(\`
+      .select(`
         id,
         created_at,
         content,
         parent_id,
-        user_id,
-        author:users(user_metadata->username)
-      \`)
+        user_id
+      `)
       .eq('recipe_id', recipeId)
       .order('created_at', { ascending: true });
 
