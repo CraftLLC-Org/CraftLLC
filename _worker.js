@@ -87,22 +87,30 @@ async function handleApiRequest(request, env, url) {
       exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7) // 1 тиждень
     }, env.JWT_SECRET);
 
+    console.log("Generated sessionToken:", sessionToken); // Log the token
+
     const headers = {
       "Set-Cookie": `auth_session=${sessionToken}; HttpOnly; Secure; Path=/; SameSite=Lax; Max-Age=${60 * 60 * 24 * 7}`
     };
+    console.log("Set-Cookie header:", headers["Set-Cookie"]); // Log the header
     return jsonResponse({ success: true }, 200, headers);
   }
 
   // --- Перевірка сесії ---
   const sessionCookie = getCookie(request, "auth_session");
+  console.log("Received Cookie header:", request.headers.get("Cookie")); // Log received cookie header
+  console.log("Extracted auth_session cookie:", sessionCookie); // Log extracted cookie
   let user = null;
   if (sessionCookie) {
     try {
       const isValid = await verify(sessionCookie, env.JWT_SECRET);
+      console.log("JWT verification result:", isValid); // Log verification result
       if (isValid) {
         user = isValid.payload;
+        console.log("Authenticated user payload:", user); // Log user payload
       }
     } catch (err) {
+      console.error("JWT verification failed:", err.message); // Log verification error
       // Cookie невалідний або прострочений
     }
   }
