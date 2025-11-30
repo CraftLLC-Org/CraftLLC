@@ -527,34 +527,6 @@
         const loader = document.getElementById('loader-wrapper');
         if (loader) loader.style.display = 'none';
     });
-
-    function setSpecialDateAssets() {
-        const today = new Date();
-        const day = today.getDate();
-        const month = today.getMonth() + 1;
-
-        const favicon = document.getElementById('favicon');
-        const logo = document.getElementById('logo');
-
-        if (month === 1 && day === 1) {
-            favicon.href = '/favicon2.ico';
-            logo.src = '/logo2.png';
-        }
-        else if (month === 3 && day === 8) {
-            favicon.href = '/favicon.ico';
-            logo.src = '/logo3.png';
-        }
-        else if (month === 9 && day === 26) {
-            favicon.href = '/favicon_birthday.ico';
-            logo.src = '/logo_birthday.png';
-        }
-        else {
-            favicon.href = '/favicon.ico';
-            logo.src = '/logo.png';
-        }
-    }
-
-    document.addEventListener("DOMContentLoaded", setSpecialDateAssets);
     </script>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
