@@ -141,32 +141,6 @@
         }
     });
 
-    function setSpecialDateAssets() {
-        const today = new Date();
-        const day = today.getDate();
-        const month = today.getMonth() + 1;
-
-        const favicon = document.getElementById('favicon');
-        const logo = document.getElementById('logo');
-
-        if (month === 1 && day === 1) {
-            favicon.href = '/favicon2.ico';
-            logo.src = '/logo2.png';
-        } 
-        else if (month === 3 && day === 8) {
-            favicon.href = '/favicon.ico';
-            logo.src = '/logo3.png';
-        } 
-        else if (month === 9 && day === 26) {
-            favicon.href = '/favicon_birthday.ico';
-            logo.src = '/logo_birthday.png';
-        } 
-        else {
-            favicon.href = '/favicon.ico';
-            logo.src = '/logo.png';
-        }
-    }
-
     document.addEventListener("DOMContentLoaded", setSpecialDateAssets);
     </script>
 </head>
@@ -182,7 +156,7 @@
     <div id="loader-wrapper">
         <div class="loader"></div>
     </div>
-    <img src="/logo.png" width=90% id="logo"></img>
+    <img src="/static/img/logo.png" width=90% id="logo"></img>
     <h1>CraftAntivirus</h1>
 
     <h2>CraftAntivirus — Антивірус, який сканує за допомогою VirusTotal та ШІ</h2>
@@ -199,11 +173,11 @@
     </p>
     
     <h3>Скріншоти</h3>
-    <img src="screen1.png" alt="Інтерфейс програми" class="screenshot">
+    <img src="/static/img/craftantivirus/screen1.png" alt="Інтерфейс програми" class="screenshot">
     <br><br>
-    <img src="screen2.png" alt="Результати сканування" class="screenshot">
+    <img src="/static/img/craftantivirus/screen2.png" alt="Результати сканування" class="screenshot">
     <br><br>
-    <img src="screen3.png" alt="Діалог про вже сканований файл" class="screenshot">
+    <img src="/static/img/craftantivirus/screen3.png" alt="Діалог про вже сканований файл" class="screenshot">
 
     <h3>Встановлення</h3>
     <a href="https://github.com/CraftLLC/FilesStore/releases/download/craftav-v1.1/CraftAntivirus.zip"><button>Завантажити</button></a>
