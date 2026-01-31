@@ -115,18 +115,8 @@
 
         <p class="copyright">© Андрій Рудик 2024-2025</p>
     </footer>
-    <script>
-        // Приховуємо header, якщо mainPageView=true
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('mainPageView') === 'true') {
-            const header = document.querySelector('header');
-            const footer = document.getElementById('footerID');
-            const body = document.querySelector('body');
-            if (header) header.style.display = 'none';
-            if (footer) footer.style.display = 'none';
-            if (body) body.style.background = 'transparent';
-        }
-    </script>
-</body>
 
+    <script src="/static/js/main.js" defer></script>
+    <script src="/static/js/mainPageView.js" defer></script>
+</body>
 </html>
