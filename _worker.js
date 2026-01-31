@@ -17,7 +17,7 @@ export default {
 
         if (showBadge) {
           return new Response(JSON.stringify({
-            schema_version: 1,
+            schemaVersion: 1,
             label: "Рецепт",
             message: latestRecipe.name,
             color: "orange"
