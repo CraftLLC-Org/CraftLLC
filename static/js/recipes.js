@@ -72,7 +72,7 @@ function renderComment(comment, container, recipeId) {
     
     div.innerHTML = `
         <div class="comment-header">
-            <strong>${comment.nickname}</strong> <span class="comment-time">${time}</span>
+            <span>${comment.nickname}</span> <span class="comment-time">${time}</span>
             ${comment.hearts && comment.hearts.length ? '<span class="admin-heart">❤</span>' : ''}
         </div>
         <div class="comment-content">${comment.content}</div>
@@ -89,7 +89,7 @@ function renderComment(comment, container, recipeId) {
         <div id="replies-${comment.id}" class="comment-replies">
             ${(comment.replies || []).map(r => `
                 <div class="comment-reply">
-                    <strong>${r.nickname}</strong>: ${r.content}
+                    <span>${r.nickname}</span>: ${r.content}
                     ${r.hearts && r.hearts.length ? ' <span class="admin-heart">❤</span>' : ''}
                 </div>
             `).join('')}
@@ -139,7 +139,7 @@ window.submitReply = async function(recipeId, commentId) {
         const repliesContainer = document.getElementById(`replies-${commentId}`);
         const replyDiv = document.createElement('div');
         replyDiv.classList.add('comment-reply');
-        replyDiv.innerHTML = `<strong>${data.nickname}</strong>: ${data.content}`;
+        replyDiv.innerHTML = `<span>${data.nickname}</span>: ${data.content}`;
         repliesContainer.appendChild(replyDiv);
         document.getElementById(`reply-form-${commentId}`).classList.add('hidden');
     } catch (e) {
@@ -308,7 +308,7 @@ function generateRecipeCard(recipe, index) {
     let ingredientsHtml = '';
     if (recipe.ingredients) {
         recipe.ingredients.forEach(group => {
-            ingredientsHtml += group._name ? `<br><strong>Інгредієнти (${group._name}):</strong><br>` : '<br><strong>Інгредієнти:</strong><br>';
+            ingredientsHtml += group._name ? `<br>Інгредієнти (${group._name}):<br>` : '<br>Інгредієнти:<br>';
             for (const [name, amount] of Object.entries(group)) {
                 if (name !== '_name') ingredientsHtml += `${name} - ${amount || ''}<br>`;
             }
@@ -317,7 +317,7 @@ function generateRecipeCard(recipe, index) {
 
     let propertiesHtml = '';
     if (recipe.properties) {
-        propertiesHtml += '<br><strong>Властивості:</strong><br>';
+        propertiesHtml += '<br>Властивості:<br>';
         if (recipe.properties.temperature) propertiesHtml += `Температура: ${recipe.properties.temperature}°C<br>`;
         if (recipe.properties.time) propertiesHtml += `Час: ${recipe.properties.time}<br>`;
         if (recipe.properties.mdiam) propertiesHtml += `Діаметр: ${recipe.properties.mdiam}<br>`;
@@ -366,15 +366,22 @@ function generateRecipeCard(recipe, index) {
 }
 
 async function loadRecipes() {
-    const response = await fetch('/recipes/list.json');
-    const recipes = await response.json();
-    const container = document.getElementById('recipesContainer');
-    if (container) {
-        container.innerHTML = '';
-        recipes.forEach((r, i) => container.appendChild(generateRecipeCard(r, i)));
+    try {
+        const response = await fetch('/recipes/list.json');
+        const recipes = await response.json();
+        const container = document.getElementById('recipesContainer');
+        if (container) {
+            container.innerHTML = '';
+            recipes.forEach((r, i) => {
+                const card = generateRecipeCard(r, i);
+                container.appendChild(card);
+            });
+        }
+        processRecipeCards();
+        filterAndSortRecipes();
+    } catch (e) {
+        console.error("Failed to load recipes", e);
     }
-    processRecipeCards();
-    filterAndSortRecipes();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -403,16 +410,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Try Recipe Unlock
             let found = false;
-            document.querySelectorAll('.card').forEach((card, index) => {
-                if (card.dataset.cheatcode && card.dataset.cheatcode.toLowerCase() === code.toLowerCase()) {
-                    cheatCodesUsed[`card-${index}`] = true;
+            document.querySelectorAll('.card').forEach((card) => {
+                const cardCheat = card.dataset.cheatcode;
+                if (cardCheat && cardCheat.toLowerCase() === code.toLowerCase()) {
+                    const cardId = Array.from(document.querySelectorAll('.card')).indexOf(card);
+                    cheatCodesUsed[`card-${cardId}`] = true;
                     found = true;
                 }
             });
 
             if (found) {
                 localStorage.setItem('cheatCodesUsed', JSON.stringify(cheatCodesUsed));
-                location.reload();
+                const msg = document.getElementById('modalMessage');
+                msg.style.color = 'green';
+                msg.textContent = 'Чит-код прийнято!';
+                setTimeout(() => location.reload(), 1000);
             } else {
                 const msg = document.getElementById('modalMessage');
                 msg.style.color = 'red';
