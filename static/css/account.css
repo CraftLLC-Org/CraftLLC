@@ -21,7 +21,7 @@
     display: inline-block;
     margin-bottom: 20px;
     font-size: 21px;
-    font-weight: 700;
+    font-weight: normal;
     color: #FFA600;
 }
 
@@ -62,12 +62,7 @@ input[type="text"]:focus, input[type="password"]:focus {
 /* Overriding global button style from main.css */
 .auth-btn {
     width: 100%;
-    transition: transform 0.2s;
-}
-
-.auth-btn:hover {
-    transform: translateY(-2px);
-    opacity: 0.9;
+    font-weight: normal;
 }
 
 .auth-switch {
@@ -78,7 +73,7 @@ input[type="text"]:focus, input[type="password"]:focus {
 
 .auth-switch a {
     color: #FFA600;
-    font-weight: bold;
+    font-weight: normal;
 }
 
 .auth-switch a:hover {
@@ -89,6 +84,7 @@ input[type="text"]:focus, input[type="password"]:focus {
 .profile-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 20px;
     margin-bottom: 30px;
     border-bottom: 1px solid #222;
@@ -127,18 +123,19 @@ input[type="text"]:focus, input[type="password"]:focus {
 }
 
 .logout-btn {
-    background-color: #555;
-    border: 1px solid #777;
+    background: #666; 
+    border: 1px solid #888;
     color: white;
     padding: 8px 16px;
     border-radius: 8px;
-    float: right;
     transition: background 0.3s;
-    font-weight: bold;
+    font-weight: normal;
+    width: auto;
+    height: auto;
 }
 
 .logout-btn:hover {
-    background-color: #444;
+    background-color: #555;
 }
 
 #authMessage, #profileMessage {
@@ -147,7 +144,7 @@ input[type="text"]:focus, input[type="password"]:focus {
     border-radius: 8px;
     display: none;
     text-align: center;
-    font-weight: bold;
+    font-weight: normal;
 }
 
 .msg-error { background: rgba(255, 68, 68, 0.1); color: #ff4444; border: 1px solid #ff4444; }
