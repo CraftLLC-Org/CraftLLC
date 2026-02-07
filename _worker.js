@@ -292,6 +292,30 @@ export default {
       return new Response(JSON.stringify({ success: true }));
     }
 
+    // 8. Delete Comment
+    if (cleanPath === "api/comments/delete" && request.method === "DELETE") {
+      if (!userData) return new Response(JSON.stringify({ error: "Авторизуйтесь" }), { status: 401 });
+      const { recipeId, commentId } = await request.json();
+
+      const key = `comments:recipe:${recipeId}`;
+      let comments = JSON.parse(await env.DB.get(key) || "[]");
+      
+      const commentIndex = comments.findIndex(c => c.id === commentId);
+      if (commentIndex === -1) return new Response("Comment not found", { status: 404 });
+
+      const comment = comments[commentIndex];
+      const isAuthor = comment.username === userData.username;
+      const isAdmin = userData.role === 'admin';
+
+      if (!isAuthor && !isAdmin) {
+        return new Response(JSON.stringify({ error: "Немає прав" }), { status: 403 });
+      }
+
+      comments.splice(commentIndex, 1);
+      await env.DB.put(key, JSON.stringify(comments));
+      return new Response(JSON.stringify({ success: true }));
+    }
+
     // Якщо це не API, повертаємо статичні файли
     return env.ASSETS.fetch(request);
   },

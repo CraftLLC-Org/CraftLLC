@@ -70,10 +70,15 @@ function renderComment(comment, container, recipeId) {
     const canHeart = currentUserData && (currentUserData.role === 'admin' || currentUserData.role === 'responder');
     const canReply = currentUserData && (currentUserData.role === 'admin' || currentUserData.role === 'responder' || currentUserData.username === comment.username);
     
+    const isAuthor = currentUserData && currentUserData.username === comment.username;
+    const isAdmin = currentUserData && currentUserData.role === 'admin';
+    const canDelete = isAuthor || isAdmin;
+
     div.innerHTML = `
         <div class="comment-header">
             <span>${comment.nickname}</span> <span class="comment-time">${time}</span>
             ${comment.hearts && comment.hearts.length ? '<span class="admin-heart">❤</span>' : ''}
+            ${canDelete ? `<button class="delete-comment-btn" onclick="deleteComment('${recipeId}', '${comment.id}')" title="Видалити"><i class="fas fa-trash"></i></button>` : ''}
         </div>
         <div class="comment-content">${comment.content}</div>
         <div class="comment-actions">
@@ -104,6 +109,28 @@ function renderComment(comment, container, recipeId) {
 
 window.toggleReplyForm = function(commentId) {
     document.getElementById(`reply-form-${commentId}`).classList.toggle('hidden');
+};
+
+window.deleteComment = async function(recipeId, commentId) {
+    if (!confirm('Видалити цей коментар?')) return;
+    try {
+        const res = await fetch('/api/comments/delete', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ recipeId, commentId })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        
+        // Remove from DOM
+        const commentDiv = document.querySelector(`.recipe-comment[data-id="${commentId}"]`);
+        if (commentDiv) commentDiv.remove();
+        
+        // Update count if possible, or reload
+        // location.reload(); // Simple way
+    } catch (e) {
+        alert(e.message);
+    }
 };
 
 window.interactComment = async function(recipeId, commentId, action, btn) {
@@ -354,11 +381,21 @@ function generateRecipeCard(recipe, index) {
     loadInteractions(card, recipeId);
 
     card.addEventListener('dblclick', () => {
+        // Try posting message to parent first (for iframe context)
+        try {
+            if (window.self !== window.top) {
+                parent.postMessage({ type: 'openCheatCodeModal' }, '*');
+            }
+        } catch (e) {}
+
+        // Also try opening local modal if it exists
         const modal = document.getElementById('cheatCodeModal');
         if (modal) {
             modal.style.display = 'flex';
-            document.getElementById('cheatCodeInput').value = '';
-            document.getElementById('modalMessage').textContent = '';
+            const input = document.getElementById('cheatCodeInput');
+            const msg = document.getElementById('modalMessage');
+            if(input) input.value = '';
+            if(msg) msg.textContent = '';
         }
     });
 

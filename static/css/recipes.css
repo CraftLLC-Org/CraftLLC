@@ -10,6 +10,8 @@ input {
     margin-bottom: 15px;
     user-select: text !important;
     -webkit-user-select: text !important;
+    color: #fff !important; /* Ensure text is visible */
+    background-color: #333; /* Ensure background contrasts with text */
 }
 
 .card {
@@ -343,6 +345,20 @@ select {
 
 .heart-btn.hearted {
     color: #ff3366 !important;
+}
+
+.delete-comment-btn {
+    background: none;
+    border: none;
+    color: #cc0000;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 10px;
+    padding: 0;
+}
+
+.delete-comment-btn:hover {
+    color: #ff0000;
 }
 
 input, select, button {
