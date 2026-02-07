@@ -8,10 +8,6 @@ input {
     padding: 0 10px;
     box-sizing: border-box;
     margin-bottom: 15px;
-    user-select: text !important;
-    -webkit-user-select: text !important;
-    color: #fff !important; /* Ensure text is visible */
-    background-color: #333; /* Ensure background contrasts with text */
 }
 
 .card {
@@ -41,6 +37,24 @@ input {
     background-color: #000;
     background-size: cover;
     background-position: center;
+}
+
+.card__vid-placeholder::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 68px;
+    height: 48px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 68 48"><path d="M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55.79,.13,34,0,34,0S12.21,.13,6.9,1.55C3.97,2.33,2.27,4.81,1.48,7.74,0.06,13.05,0,24,0,24s0.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42,6.19C12.21,47.87,34,48,34,48s21.79-0.13,27.1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34.95,68,24,68,24S67.94,13.05,66.52,7.74z" fill="%23ff0000" fill-opacity="0.8"></path><path d="M 45,24 27,14 27,34" fill="%23fff"></path></svg>');
+    background-repeat: no-repeat;
+    background-size: contain;
+    transition: transform 0.2s ease-out;
+}
+
+.card__vid-placeholder:hover::after {
+    transform: translate(-50%, -50%) scale(1.1);
 }
 
 .card__body {
@@ -202,165 +216,4 @@ select {
     .card__timer .label {
         font-size: 0.6em;
     }
-}
-/* Interactions */
-.recipe-interactions {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 15px;
-}
-
-.like-btn, .comment-toggle-btn {
-    background: none;
-    border: none;
-    color: #888;
-    cursor: pointer;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    transition: color 0.3s;
-}
-
-.like-btn:hover, .like-btn.active {
-    color: #ff4d4d;
-}
-
-.comment-toggle-btn:hover {
-    color: #ffa516;
-}
-
-.hidden {
-    display: none !important;
-}
-
-.comments-section {
-    margin-top: 20px;
-    border-top: 1px solid #333;
-    padding-top: 20px;
-}
-
-.add-comment {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.comment-input {
-    flex: 1;
-    margin-bottom: 0 !important;
-}
-
-.post-comment-btn {
-    background: orange;
-    color: white;
-    border: none;
-    padding: 0 15px;
-    border-radius: 10px;
-    cursor: pointer;
-}
-
-.recipe-comment {
-    background: #1a1a1a;
-    padding: 12px;
-    border-radius: 10px;
-    margin-bottom: 15px;
-    position: relative;
-    border-left: 3px solid #333;
-}
-
-.comment-header {
-    display: flex;
-    justify-content: space-between;
-    font-size: 14px;
-    margin-bottom: 8px;
-}
-
-.comment-time {
-    color: #666;
-}
-
-.comment-content {
-    font-size: 15px;
-    line-height: 1.4;
-    margin-bottom: 10px;
-}
-
-.comment-actions {
-    display: flex;
-    gap: 12px;
-    font-size: 13px;
-}
-
-.comment-actions button {
-    background: none;
-    border: none;
-    color: #777;
-    cursor: pointer;
-}
-
-.comment-actions button:hover {
-    color: white;
-}
-
-.admin-heart {
-    color: #ff3366;
-    margin-left: 5px;
-    text-shadow: 0 0 5px rgba(255, 51, 102, 0.5);
-}
-
-.comment-replies {
-    margin-left: 20px;
-    margin-top: 10px;
-    border-left: 1px solid #333;
-    padding-left: 10px;
-}
-
-.comment-reply {
-    font-size: 14px;
-    margin-bottom: 5px;
-    color: #ccc;
-}
-
-.reply-form {
-    margin-top: 10px;
-    display: flex;
-    gap: 5px;
-}
-
-.reply-form input {
-    flex: 1;
-    height: 30px;
-    font-size: 14px;
-}
-
-.reply-form button {
-    background: #444;
-    color: white;
-    border: none;
-    padding: 0 10px;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.heart-btn.hearted {
-    color: #ff3366 !important;
-}
-
-.delete-comment-btn {
-    background: none;
-    border: none;
-    color: #cc0000;
-    cursor: pointer;
-    font-size: 14px;
-    margin-left: 10px;
-    padding: 0;
-}
-
-.delete-comment-btn:hover {
-    color: #ff0000;
-}
-
-input, select, button {
-    pointer-events: auto !important;
 }
