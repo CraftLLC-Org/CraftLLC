@@ -579,7 +579,7 @@ function generateRecipeCard(recipe, index) {
 
             cheatCodeInput.value = '';
             modalMessage.textContent = '';
-            cheatCodeModal.style.display = 'flex';
+            cheatCodeModal.style.display = 'block';
         }
     });
 
@@ -693,7 +693,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         addCheatCodeBtn.addEventListener('click', () => {
             activeCheatCodesModal.style.display = 'none'; // Close active codes modal
-            cheatCodeModal.style.display = 'flex'; // Open cheat code input modal
+            cheatCodeModal.style.display = 'block'; // Open cheat code input modal
             cheatCodeInput.value = '';
             modalMessage.textContent = '';
         });
@@ -746,43 +746,95 @@ document.addEventListener("DOMContentLoaded", () => {
             // Render Admin Panel
             const adminContainer = document.createElement('div');
             adminContainer.id = 'adminPanel';
-            adminContainer.style = 'background: #1e1e1e; padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px solid orange;';
+            adminContainer.style = 'background: #1e1e1e; padding: 25px; border-radius: 12px; margin: 30px auto; border: 1px solid #e67e22; max-width: 800px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);';
             adminContainer.innerHTML = `
-                <h2 style="color: orange; margin-top: 0;">Адмін Панель</h2>
-                <div style="margin-bottom: 20px;">
-                    <button id="adminMigrateBtn">Імпортувати list.json</button>
+                <h2 style="color: #e67e22; margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px;">Адмін Панель</h2>
+                <div style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+                    <button id="adminMigrateBtn" style="background: #2980b9; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">Імпортувати list.json</button>
                     <input type="file" id="adminMigrateInput" accept=".json" style="display: none;">
-                    <button id="adminAddBtn">Додати рецепт</button>
+                    <button id="adminAddBtn" style="background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">+ Додати рецепт</button>
                 </div>
-                <div id="adminEditor" style="display: none; background: #2b2b2b; padding: 15px; border-radius: 8px;">
-                    <h3 id="adminEditorTitle">Редагування</h3>
-                    <div style="display: grid; gap: 10px; margin-bottom: 10px;">
-                        <input id="editName" placeholder="Назва" style="width: 100%; box-sizing: border-box;">
-                        <textarea id="editDesc" placeholder="Опис" rows="3" style="width: 100%; box-sizing: border-box; background: #141414; color: white; border: 1px solid #444;"></textarea>
-                        
-                        <div style="display: flex; gap: 10px;">
-                            <input id="editType" placeholder="Тип (cookie, cake, pie, pudding)" style="flex: 1;">
-                            <input id="editVideoId" placeholder="YouTube Video ID" style="flex: 1;">
+                
+                <div id="adminEditor" style="display: none; background: #2b2b2b; padding: 20px; border-radius: 8px; border: 1px solid #444;">
+                    <h3 id="adminEditorTitle" style="margin-top: 0; color: #ddd;">Редагування</h3>
+                    <div style="display: grid; gap: 15px; margin-bottom: 20px;">
+                        <div>
+                            <label style="display: block; color: #aaa; margin-bottom: 5px;">Назва</label>
+                            <input id="editName" placeholder="Назва рецепту" style="width: 100%; box-sizing: border-box; padding: 8px; background: #141414; border: 1px solid #444; color: white;">
                         </div>
                         
-                        <div style="display: flex; gap: 10px;">
-                            <input id="editTemp" placeholder="Температура (180)" style="flex: 1;">
-                            <input id="editTime" placeholder="Час (30хв)" style="flex: 1;">
+                        <div>
+                            <label style="display: block; color: #aaa; margin-bottom: 5px;">Опис</label>
+                            <textarea id="editDesc" placeholder="Опис рецепту" rows="4" style="width: 100%; box-sizing: border-box; background: #141414; color: white; border: 1px solid #444; padding: 8px;"></textarea>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <label style="display: block; color: #aaa; margin-bottom: 5px;">Тип</label>
+                                <input id="editType" placeholder="cookie, cake, pie, pudding" style="width: 100%; box-sizing: border-box; padding: 8px; background: #141414; border: 1px solid #444; color: white;">
+                            </div>
+                            <div>
+                                <label style="display: block; color: #aaa; margin-bottom: 5px;">Дата (dd.MM.yyyy)</label>
+                                <input id="editDate" placeholder="24.08.2024" style="width: 100%; box-sizing: border-box; padding: 8px; background: #141414; border: 1px solid #444; color: white;">
+                            </div>
                         </div>
 
-                        <label>Інгредієнти (JSON):</label>
-                        <textarea id="editIngredients" rows="5" style="width: 100%; box-sizing: border-box; background: #141414; color: white; border: 1px solid #444; font-family: monospace;"></textarea>
+                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <label style="display: block; color: #aaa; margin-bottom: 5px;">Відео (YouTube ID)</label>
+                                <input id="editVideoId" placeholder="dQw4w9WgXcQ" style="width: 100%; box-sizing: border-box; padding: 8px; background: #141414; border: 1px solid #444; color: white;">
+                            </div>
+                            <div>
+                                <label style="display: block; color: #aaa; margin-bottom: 5px;">Відео (Локальне/SRC)</label>
+                                <input id="editVideoSrc" placeholder="videos/cake.mp4" style="width: 100%; box-sizing: border-box; padding: 8px; background: #141414; border: 1px solid #444; color: white;">
+                            </div>
+                        </div>
                         
-                        <label>Ключові слова (через кому):</label>
-                        <input id="editKeywords" style="width: 100%; box-sizing: border-box;">
+                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <label style="display: block; color: #aaa; margin-bottom: 5px;">Посилання на відео</label>
+                                <input id="editVideoLink" placeholder="https://youtu.be/..." style="width: 100%; box-sizing: border-box; padding: 8px; background: #141414; border: 1px solid #444; color: white;">
+                            </div>
+                             <div style="display: flex; align-items: flex-end; padding-bottom: 10px;">
+                                <label style="color: #aaa; display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" id="editUnchecked" style="margin-right: 10px; width: 20px; height: 20px;">
+                                    Неперевірений рецепт
+                                </label>
+                            </div>
+                        </div>
                         
-                        <div style="display: flex; gap: 10px;">
-                            <input id="editDate" placeholder="Дата (dd.MM.yyyy)" style="flex: 1;">
-                            <input id="editCheatCode" placeholder="Чит-код" style="flex: 1;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <label style="display: block; color: #aaa; margin-bottom: 5px;">Температура</label>
+                                <input id="editTemp" placeholder="180" style="width: 100%; box-sizing: border-box; padding: 8px; background: #141414; border: 1px solid #444; color: white;">
+                            </div>
+                            <div>
+                                <label style="display: block; color: #aaa; margin-bottom: 5px;">Час</label>
+                                <input id="editTime" placeholder="30хв" style="width: 100%; box-sizing: border-box; padding: 8px; background: #141414; border: 1px solid #444; color: white;">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style="display: block; color: #aaa; margin-bottom: 5px;">Інгредієнти (JSON масив об'єктів)</label>
+                            <textarea id="editIngredients" rows="6" style="width: 100%; box-sizing: border-box; background: #141414; color: white; border: 1px solid #444; font-family: monospace; padding: 8px;"></textarea>
+                            <small style="color: #666;">Приклад: [{"_name": "Тісто", "борошно": "100г"}, {"цукор": "50г"}]</small>
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; color: #aaa; margin-bottom: 5px;">Ключові слова (через кому)</label>
+                            <input id="editKeywords" placeholder="солодке, випічка" style="width: 100%; box-sizing: border-box; padding: 8px; background: #141414; border: 1px solid #444; color: white;">
+                        </div>
+                         
+                         <div>
+                            <label style="display: block; color: #aaa; margin-bottom: 5px;">Чит-код</label>
+                            <input id="editCheatCode" placeholder="SECRET123" style="width: 100%; box-sizing: border-box; padding: 8px; background: #141414; border: 1px solid #444; color: white;">
                         </div>
                     </div>
-                    <button id="adminSaveBtn">Зберегти</button>
-                    <button id="adminCancelBtn">Скасувати</button>
+                    
+                    <div style="display: flex; gap: 15px; justify-content: flex-end;">
+                        <button id="adminCancelBtn" style="background: #7f8c8d; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Скасувати</button>
+                        <button id="adminSaveBtn" style="background: #e67e22; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">Зберегти</button>
+                    </div>
                 </div>
             `;
             
@@ -791,7 +843,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (searchContainer) {
                  searchContainer.parentNode.insertBefore(adminContainer, searchContainer);
             } else {
-                 // Fallback if searchContainer is missing (e.g. loaded dynamically differently?)
                  document.body.insertBefore(adminContainer, document.body.firstChild);
             }
 
@@ -804,6 +855,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const inpDesc = document.getElementById('editDesc');
             const inpType = document.getElementById('editType');
             const inpVideoId = document.getElementById('editVideoId');
+            const inpVideoSrc = document.getElementById('editVideoSrc'); // New
+            const inpVideoLink = document.getElementById('editVideoLink'); // New
+            const inpUnchecked = document.getElementById('editUnchecked'); // New
             const inpTemp = document.getElementById('editTemp');
             const inpTime = document.getElementById('editTime');
             const inpIngredients = document.getElementById('editIngredients');
@@ -813,7 +867,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             let isEditing = false;
             let editingIndex = -1;
-            let originalRecipe = {}; // To keep other fields safe
+            let originalRecipe = {}; 
 
             document.getElementById('adminMigrateBtn').onclick = () => {
                  document.getElementById('adminMigrateInput').click();
@@ -853,6 +907,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 inpDesc.value = recipe.description || "";
                 inpType.value = recipe.recipe_type || "cookie";
                 inpVideoId.value = recipe.video_id || "";
+                inpVideoSrc.value = recipe.video_src || "";
+                inpVideoLink.value = recipe.video_link || "";
+                inpUnchecked.checked = !!recipe.recipe_unchecked;
                 
                 if (recipe.properties) {
                      inpTemp.value = recipe.properties.temperature || "";
@@ -873,8 +930,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 let ingredients = [];
                 try {
                     ingredients = JSON.parse(inpIngredients.value);
+                    if (!Array.isArray(ingredients)) throw new Error("Інгредієнти мають бути масивом");
                 } catch(e) {
-                    alert("Помилка в JSON інгредієнтів!");
+                    alert("Помилка в JSON інгредієнтів: " + e.message);
                     return null;
                 }
 
@@ -884,6 +942,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     description: inpDesc.value,
                     recipe_type: inpType.value,
                     video_id: inpVideoId.value || null,
+                    video_src: inpVideoSrc.value || null,
+                    video_link: inpVideoLink.value || null,
+                    recipe_unchecked: inpUnchecked.checked || false,
                     properties: {
                          temperature: inpTemp.value,
                          time: inpTime.value
@@ -906,7 +967,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     keywords: [] 
                 });
                 editor.style.display = 'block';
-                // Scroll to editor
                 editor.scrollIntoView({behavior: "smooth"});
             };
 
@@ -946,29 +1006,25 @@ document.addEventListener("DOMContentLoaded", () => {
             
             // Add Edit/Delete buttons to each card
             const cards = document.querySelectorAll('.card');
-            console.log("Found cards for admin buttons:", cards.length);
-
+            
             cards.forEach((card, index) => {
                 const actionsDiv = document.createElement('div');
-                actionsDiv.style = "margin-top: 10px; border-top: 1px solid #333; padding-top: 5px; display: flex; gap: 10px; z-index: 20; position: relative;";
+                actionsDiv.style = "margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; display: flex; gap: 10px; z-index: 20; position: relative;";
                 actionsDiv.innerHTML = `
-                    <button class="admin-edit-btn" style="background: #e67e22; border: none; padding: 5px 10px; cursor: pointer; color: white;">Ред.</button>
-                    <button class="admin-delete-btn" style="background: #c0392b; border: none; padding: 5px 10px; cursor: pointer; color: white;">Видалити</button>
-                    <span style="color: #666; font-size: 12px; margin-left: auto;">Index: ${index}</span>
+                    <button class="admin-edit-btn" style="background: #d35400; border: none; padding: 6px 12px; cursor: pointer; color: white; border-radius: 4px; font-size: 14px;">Редагувати</button>
+                    <button class="admin-delete-btn" style="background: #c0392b; border: none; padding: 6px 12px; cursor: pointer; color: white; border-radius: 4px; font-size: 14px;">Видалити</button>
+                    <div style="margin-left: auto; color: #666; font-size: 12px; align-self: center;">ID: ${index}</div>
                 `;
                 
-                // Use addEventListener instead of onclick to avoid overwriting or issues
                 const editBtn = actionsDiv.querySelector('.admin-edit-btn');
                 editBtn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Prevent card click
+                    e.stopPropagation(); 
                     e.preventDefault();
-
-                    console.log("Edit clicked for index:", index);
 
                     fetch('/api/recipes').then(r => r.json()).then(recipes => {
                          const recipe = recipes[index]; 
                          if (!recipe) {
-                             alert("Не вдалося знайти рецепт (можливо індекс змістився)");
+                             alert("Не вдалося знайти рецепт");
                              return;
                          }
 
@@ -988,7 +1044,7 @@ document.addEventListener("DOMContentLoaded", () => {
                      e.stopPropagation();
                      e.preventDefault();
 
-                     if (confirm("Видалити цей рецепт?")) {
+                     if (confirm(`Видалити рецепт "${card.querySelector('.card__title').textContent}"?`)) {
                         const res = await fetch('/api/admin/recipes/delete', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
@@ -1145,9 +1201,8 @@ async function fetchLikes() {
                  newBtn.onclick = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (confirm("Будь ласка, увійдіть в акаунт, щоб лайкати рецепти! Перейти на сторінку входу?")) {
-                         window.location.href = '/account';
-                    }
+                    alert("Будь ласка, увійдіть в акаунт, щоб лайкати рецепти: /account");
+                    // Optionally redirect: window.location.href = '/account';
                  };
             }
         });
