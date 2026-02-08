@@ -36,13 +36,41 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
+
+
     // --- API: Recipes ---
+    // 9. Get Recipes List
+    if (cleanPath === "api/recipes" && request.method === "GET") {
+      try {
+         const recipesStr = await env.DB.get('recipes_data');
+         let recipes = recipesStr ? JSON.parse(recipesStr) : [];
+         
+         // If no recipes in DB, try to fallback to static file if not migrated yet? 
+         // User asked to migrate list.json. If DB is empty, return empty list or handle client side.
+         // Let's just return what's in DB.
+         
+         return new Response(JSON.stringify(recipes), {
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          }
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: "Failed to fetch recipes" }), { status: 500, headers: corsHeaders });
+      }
+    }
+    
+    // Legacy support for 'latest' if needed (optional) but user didn't ask to remove it. 
+    // Updating 'latest' logic to use DB
     if (cleanPath === "api/recipes/latest") {
       try {
-        const response = await fetch("https://craftllc.pages.dev/recipes/list.json");
-        if (!response.ok) throw new Error("Failed to fetch");
+        const recipesStr = await env.DB.get('recipes_data');
+        const recipes = recipesStr ? JSON.parse(recipesStr) : [];
         
-        const recipes = await response.json();
+        if (recipes.length === 0) {
+             return new Response(JSON.stringify({ error: "No recipes found" }), { status: 404, headers: corsHeaders });
+        }
+
         const latestRecipe = recipes[0]; 
         const showBadge = url.searchParams.get("badge") === "true";
 
@@ -73,6 +101,95 @@ export default {
         });
       }
     }
+
+    // --- API: Admin ---
+    const ADMIN_USERNAME = "CraftLLC";
+
+    async function isAdmin(request) {
+        const token = getCookie(request, COOKIE_NAME);
+        if (!token) return false;
+        const username = await env.DB.get(`session:${token}`);
+        return username === ADMIN_USERNAME;
+    }
+
+    // 10. Migrate/Import Recipes
+    if (cleanPath === "api/admin/recipes/migrate" && request.method === "POST") {
+        if (!(await isAdmin(request))) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+        
+        try {
+            const recipes = await request.json();
+            if (!Array.isArray(recipes)) {
+                return new Response(JSON.stringify({ error: "Invalid format" }), { status: 400 });
+            }
+            await env.DB.put('recipes_data', JSON.stringify(recipes));
+            return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+        } catch (e) {
+             return new Response(JSON.stringify({ error: "Migration failed" }), { status: 500 });
+        }
+    }
+
+    // 11. Add Recipe
+    if (cleanPath === "api/admin/recipes/add" && request.method === "POST") {
+        if (!(await isAdmin(request))) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+        
+        try {
+            const newRecipe = await request.json();
+            const recipesStr = await env.DB.get('recipes_data');
+            let recipes = recipesStr ? JSON.parse(recipesStr) : [];
+            
+            // Unshift to add to the beginning (latest)
+            recipes.unshift(newRecipe);
+            
+            await env.DB.put('recipes_data', JSON.stringify(recipes));
+            return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+        } catch (e) {
+            return new Response(JSON.stringify({ error: "Add failed" }), { status: 500 });
+        }
+    }
+
+    // 12. Edit Recipe
+    if (cleanPath === "api/admin/recipes/edit" && request.method === "POST") {
+        if (!(await isAdmin(request))) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+        
+        try {
+            const { index, recipe } = await request.json();
+            const recipesStr = await env.DB.get('recipes_data');
+            let recipes = recipesStr ? JSON.parse(recipesStr) : [];
+            
+            if (index >= 0 && index < recipes.length) {
+                recipes[index] = recipe;
+                await env.DB.put('recipes_data', JSON.stringify(recipes));
+                return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+            } else {
+                return new Response(JSON.stringify({ error: "Recipe not found" }), { status: 404 });
+            }
+        } catch (e) {
+            return new Response(JSON.stringify({ error: "Edit failed" }), { status: 500 });
+        }
+    }
+
+    // 13. Delete Recipe
+    if (cleanPath === "api/admin/recipes/delete" && request.method === "POST") {
+        if (!(await isAdmin(request))) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+         
+        try {
+            const { index } = await request.json();
+            const recipesStr = await env.DB.get('recipes_data');
+            let recipes = recipesStr ? JSON.parse(recipesStr) : [];
+            
+            if (index >= 0 && index < recipes.length) {
+                recipes.splice(index, 1);
+                await env.DB.put('recipes_data', JSON.stringify(recipes));
+                return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+            } else {
+                return new Response(JSON.stringify({ error: "Recipe not found" }), { status: 404 });
+            }
+        } catch (e) {
+            return new Response(JSON.stringify({ error: "Delete failed" }), { status: 500 });
+        }
+    }
+
+
 
     // --- API: Auth ---
     

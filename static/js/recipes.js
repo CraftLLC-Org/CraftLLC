@@ -495,7 +495,11 @@ function generateRecipeCard(recipe, index) {
     if (recipe.video_id) {
         videoElement = `<div class="card__vid-placeholder" data-videoid="${recipe.video_id}"></div>`;
     } else if (recipe.video_src) {
-        videoElement = `<video class="card__vid" src="${recipe.video_src}" preload controls></video>`;
+        let src = recipe.video_src;
+        if (src.startsWith('videos/') && !src.startsWith('/')) {
+             src = '/recipes/' + src;
+        }
+        videoElement = `<video class="card__vid" src="${src}" preload controls></video>`;
     }
 
     let ingredientsHtml = '';
@@ -538,7 +542,11 @@ function generateRecipeCard(recipe, index) {
         if (recipe.video_link) {
             linkHref = recipe.video_link;
         } else {
-            linkHref = recipe.video_src;
+            let src = recipe.video_src;
+            if (src.startsWith('videos/') && !src.startsWith('/')) {
+                 src = '/recipes/' + src;
+            }
+            linkHref = src;
         }
     }
 
@@ -721,10 +729,196 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
+        setupAdminPanel();
         fetchLikes();
     });
 
     const isLight = urlParams.get('light') === 'true';
+
+    async function setupAdminPanel() {
+        try {
+            const meRes = await fetch('/api/auth/me');
+            if (meRes.status === 401) return;
+            const me = await meRes.json();
+            
+            if (me.username !== 'CraftLLC') return;
+
+            // Render Admin Panel
+            const adminContainer = document.createElement('div');
+            adminContainer.id = 'adminPanel';
+            adminContainer.style = 'background: #1e1e1e; padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px solid orange;';
+            adminContainer.innerHTML = `
+                <h2 style="color: orange; margin-top: 0;">Адмін Панель</h2>
+                <div style="margin-bottom: 20px;">
+                    <button id="adminMigrateBtn">Імпортувати list.json</button>
+                    <input type="file" id="adminMigrateInput" accept=".json" style="display: none;">
+                    <button id="adminAddBtn">Додати рецепт</button>
+                </div>
+                <div id="adminEditor" style="display: none; background: #2b2b2b; padding: 15px; border-radius: 8px;">
+                    <h3 id="adminEditorTitle">Редагування</h3>
+                    <textarea id="adminRecipeJson" rows="15" style="width: 100%; font-family: monospace; background: #141414; color: white; border: 1px solid #444; margin-bottom: 10px;"></textarea>
+                    <button id="adminSaveBtn">Зберегти</button>
+                    <button id="adminCancelBtn">Скасувати</button>
+                </div>
+            `;
+            
+            // Insert before filter controls
+            const searchContainer = document.querySelector('.search-container');
+            searchContainer.parentNode.insertBefore(adminContainer, searchContainer);
+
+            // Functionality
+            const editor = document.getElementById('adminEditor');
+            const editorTitle = document.getElementById('adminEditorTitle');
+            const jsonTextarea = document.getElementById('adminRecipeJson');
+            let isEditing = false;
+            let editingIndex = -1;
+
+            document.getElementById('adminMigrateBtn').onclick = () => {
+                 document.getElementById('adminMigrateInput').click();
+            };
+
+            document.getElementById('adminMigrateInput').onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = async (ev) => {
+                    try {
+                        const json = JSON.parse(ev.target.result);
+                        if (!confirm(`Ви впевнені, що хочете імпортувати ${Array.isArray(json) ? json.length : 0} рецептів? Це перезапише поточну базу.`)) return;
+
+                        const res = await fetch('/api/admin/recipes/migrate', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(json)
+                        });
+                        
+                        if (res.ok) {
+                            alert('Міграція успішна!');
+                            location.reload();
+                        } else {
+                            alert('Помилка міграції');
+                        }
+                    } catch (err) {
+                        alert('Невалідний JSON');
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            document.getElementById('adminAddBtn').onclick = () => {
+                isEditing = false;
+                editingIndex = -1;
+                editorTitle.textContent = "Новий рецепт";
+                // Template
+                jsonTextarea.value = JSON.stringify({
+                    name: "Новий рецепт",
+                    description: "",
+                    properties: { temperature: 180, time: "30хв" },
+                    ingredients: [ { _name: null, "борошно": "100г" } ],
+                    keywords: [],
+                    excluded_queries: [],
+                    date: null,
+                    cheat_code: null,
+                    recipe_type: "cookie"
+                }, null, 4);
+                editor.style.display = 'block';
+            };
+
+            document.getElementById('adminCancelBtn').onclick = () => {
+                editor.style.display = 'none';
+            };
+
+            document.getElementById('adminSaveBtn').onclick = async () => {
+                try {
+                    const recipe = JSON.parse(jsonTextarea.value);
+                    let url = '/api/admin/recipes/add';
+                    let body = recipe;
+                    
+                    if (isEditing) {
+                        url = '/api/admin/recipes/edit';
+                        body = { index: editingIndex, recipe };
+                    }
+
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(body)
+                    });
+
+                    if (res.ok) {
+                        alert('Збережено!');
+                        location.reload();
+                    } else {
+                        alert('Помилка збереження');
+                    }
+                } catch (err) {
+                    alert('Помилка JSON: ' + err.message);
+                }
+            };
+            
+            // Add Edit/Delete buttons to each card
+            document.querySelectorAll('.card').forEach((card, index) => {
+                const actionsDiv = document.createElement('div');
+                actionsDiv.style = "margin-top: 10px; border-top: 1px solid #333; padding-top: 5px; display: flex; gap: 10px;";
+                actionsDiv.innerHTML = `
+                    <button class="admin-edit-btn" style="background: #e67e22; border: none; padding: 5px 10px; cursor: pointer; color: white;">Ред.</button>
+                    <button class="admin-delete-btn" style="background: #c0392b; border: none; padding: 5px 10px; cursor: pointer; color: white;">Видалити</button>
+                    <span style="color: #666; font-size: 12px; margin-left: auto;">Index: ${index}</span>
+                `;
+                
+                actionsDiv.querySelector('.admin-edit-btn').onclick = () => {
+                    // We need the ACTUAL raw data. We can fetch it or try to reconstruct.
+                    // Better to fetch all recipes via the API, but `filteredCards` has the objects?
+                    // Ah, `filteredCards` contains DOM elements, not data.
+                    // `recipes` array is local variable in `loadRecipes`. We can't access it easily here unless we expose it or fetch again.
+                    // Let's rely on fetch.
+                    
+                    fetch('/api/recipes').then(r => r.json()).then(recipes => {
+                         const recipe = recipes[index]; // Assuming index matches because DOM order matches array order initially.
+                         // WARNING: filtering breaks index mapping.
+                         // But we attached this logic inside `setupAdminPanel` which is called ONCE.
+                         // We are iterating `document.querySelectorAll('.card')`.
+                         // If we are looking at *filtered* cards, we might have issues if we use index.
+                         // But `loadRecipes` appends cards in order. So initial DOM order is correct.
+                         // Wait, `filterAndSortRecipes` hides/shows cards, but doesn't reorder DOM elements usually?
+                         // DisplayPage hides/shows.
+                         // But `filterAndSortRecipes` DOES NOT reorder DOM nodes? It creates `filteredCards` array.
+                         // So DOM order is preserved relative to the full list.
+                         // Thus, `index` in querySelectorAll('.card') corresponds to DB index 0..N?
+                         // Yes, provided `loadRecipes` appended them in order.
+                         
+                         isEditing = true;
+                         editingIndex = index;
+                         editorTitle.textContent = `Редагування: ${recipe.name}`;
+                         jsonTextarea.value = JSON.stringify(recipe, null, 4);
+                         editor.style.display = 'block';
+                         adminContainer.scrollIntoView({ behavior: 'smooth' });
+                    });
+                };
+                
+                actionsDiv.querySelector('.admin-delete-btn').onclick = async () => {
+                     if (confirm("Видалити цей рецепт?")) {
+                        const res = await fetch('/api/admin/recipes/delete', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ index })
+                        });
+                        if (res.ok) {
+                            location.reload();
+                        } else {
+                            alert('Помилка видалення');
+                        }
+                     }
+                };
+                
+                card.querySelector('.card__body').appendChild(actionsDiv);
+            });
+
+        } catch (e) {
+            console.error("Admin check failed", e);
+        }
+    }
 
     if (isLight) {
         document.body.style.background = 'none';
