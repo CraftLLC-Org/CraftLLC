@@ -931,22 +931,48 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             function extractVideoId(input) {
-                if (!input) return null;
-                // If it's already an ID (no slashes, length ~11 usually but can vary)
-                if (!input.includes('/') && !input.includes('.')) return input;
+                if (!input || input.trim() === "") return null;
+                const trimmed = input.trim();
                 
+                // If it looks like a clean ID (alphanumeric, dashes, underscores, no protocol)
+                if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+
                 try {
-                    let url = new URL(input);
-                    if (url.hostname.includes('youtube.com')) {
-                        return url.searchParams.get('v');
-                    } else if (url.hostname.includes('youtu.be')) {
-                        return url.pathname.slice(1);
+                    let urlObj;
+                    try {
+                         urlObj = new URL(trimmed);
+                    } catch(e) {
+                         // If new URL fails, maybe it's just 'youtube.com/...' without protocol
+                         if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be')) {
+                             urlObj = new URL('https://' + trimmed);
+                         } else {
+                             // Not a URL structure we know, treat as ID if short enough, else null
+                             return trimmed.length < 20 ? trimmed : null;
+                         }
+                    }
+
+                    if (urlObj.hostname.includes('youtube.com')) {
+                        if (urlObj.pathname.startsWith('/embed/')) {
+                             return urlObj.pathname.split('/')[2];
+                        }
+                        if (urlObj.searchParams.has('v')) {
+                            return urlObj.searchParams.get('v');
+                        }
+                    } else if (urlObj.hostname.includes('youtu.be')) {
+                        return urlObj.pathname.slice(1);
                     }
                 } catch (e) {
-                    // Not a valid URL, maybe just an ID
-                    return input;
+                    console.error("Error parsing video URL:", e);
                 }
-                return input;
+                
+                // Fallback: simple regex search for ID pattern if URL parsing logic missed it
+                const match = trimmed.match(/[?&]v=([^&]+)/);
+                if (match) return match[1];
+                
+                // Last resort: return input if it doesn't look like a full URL but wasn't caught by ID regex
+                if (!trimmed.includes('/') && !trimmed.includes('.')) return trimmed;
+
+                return null; // Can't determine ID
             }
 
             function getRecipeFromForm() {
