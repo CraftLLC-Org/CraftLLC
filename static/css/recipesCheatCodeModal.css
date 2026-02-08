@@ -17,9 +17,9 @@
     overflow: auto;
     /* Black w/ opacity */
     background-color: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
+    display: flex; /* This was present but let's be explicit and consolidate */
 }
 
 .modal-content {

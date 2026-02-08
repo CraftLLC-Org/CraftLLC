@@ -756,7 +756,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 <div id="adminEditor" style="display: none; background: #2b2b2b; padding: 15px; border-radius: 8px;">
                     <h3 id="adminEditorTitle">Редагування</h3>
-                    <textarea id="adminRecipeJson" rows="15" style="width: 100%; font-family: monospace; background: #141414; color: white; border: 1px solid #444; margin-bottom: 10px;"></textarea>
+                    <div style="display: grid; gap: 10px; margin-bottom: 10px;">
+                        <input id="editName" placeholder="Назва" style="width: 100%; box-sizing: border-box;">
+                        <textarea id="editDesc" placeholder="Опис" rows="3" style="width: 100%; box-sizing: border-box; background: #141414; color: white; border: 1px solid #444;"></textarea>
+                        
+                        <div style="display: flex; gap: 10px;">
+                            <input id="editType" placeholder="Тип (cookie, cake, pie, pudding)" style="flex: 1;">
+                            <input id="editVideoId" placeholder="YouTube Video ID" style="flex: 1;">
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px;">
+                            <input id="editTemp" placeholder="Температура (180)" style="flex: 1;">
+                            <input id="editTime" placeholder="Час (30хв)" style="flex: 1;">
+                        </div>
+
+                        <label>Інгредієнти (JSON):</label>
+                        <textarea id="editIngredients" rows="5" style="width: 100%; box-sizing: border-box; background: #141414; color: white; border: 1px solid #444; font-family: monospace;"></textarea>
+                        
+                        <label>Ключові слова (через кому):</label>
+                        <input id="editKeywords" style="width: 100%; box-sizing: border-box;">
+                        
+                        <div style="display: flex; gap: 10px;">
+                            <input id="editDate" placeholder="Дата (dd.MM.yyyy)" style="flex: 1;">
+                            <input id="editCheatCode" placeholder="Чит-код" style="flex: 1;">
+                        </div>
+                    </div>
                     <button id="adminSaveBtn">Зберегти</button>
                     <button id="adminCancelBtn">Скасувати</button>
                 </div>
@@ -764,14 +788,32 @@ document.addEventListener("DOMContentLoaded", () => {
             
             // Insert before filter controls
             const searchContainer = document.querySelector('.search-container');
-            searchContainer.parentNode.insertBefore(adminContainer, searchContainer);
+            if (searchContainer) {
+                 searchContainer.parentNode.insertBefore(adminContainer, searchContainer);
+            } else {
+                 // Fallback if searchContainer is missing (e.g. loaded dynamically differently?)
+                 document.body.insertBefore(adminContainer, document.body.firstChild);
+            }
 
             // Functionality
             const editor = document.getElementById('adminEditor');
             const editorTitle = document.getElementById('adminEditorTitle');
-            const jsonTextarea = document.getElementById('adminRecipeJson');
+            
+            // Form Elements
+            const inpName = document.getElementById('editName');
+            const inpDesc = document.getElementById('editDesc');
+            const inpType = document.getElementById('editType');
+            const inpVideoId = document.getElementById('editVideoId');
+            const inpTemp = document.getElementById('editTemp');
+            const inpTime = document.getElementById('editTime');
+            const inpIngredients = document.getElementById('editIngredients');
+            const inpKeywords = document.getElementById('editKeywords');
+            const inpDate = document.getElementById('editDate');
+            const inpCheatCode = document.getElementById('editCheatCode');
+
             let isEditing = false;
             let editingIndex = -1;
+            let originalRecipe = {}; // To keep other fields safe
 
             document.getElementById('adminMigrateBtn').onclick = () => {
                  document.getElementById('adminMigrateInput').click();
@@ -806,23 +848,66 @@ document.addEventListener("DOMContentLoaded", () => {
                 reader.readAsText(file);
             };
 
+            function fillForm(recipe) {
+                inpName.value = recipe.name || "";
+                inpDesc.value = recipe.description || "";
+                inpType.value = recipe.recipe_type || "cookie";
+                inpVideoId.value = recipe.video_id || "";
+                
+                if (recipe.properties) {
+                     inpTemp.value = recipe.properties.temperature || "";
+                     inpTime.value = recipe.properties.time || "";
+                } else {
+                     inpTemp.value = "";
+                     inpTime.value = "";
+                }
+
+                inpIngredients.value = JSON.stringify(recipe.ingredients || [], null, 2);
+                inpKeywords.value = (recipe.keywords || []).join(', ');
+                inpDate.value = recipe.date || "";
+                inpCheatCode.value = recipe.cheat_code || "";
+            }
+
+            function getRecipeFromForm() {
+                // Parse ingredients
+                let ingredients = [];
+                try {
+                    ingredients = JSON.parse(inpIngredients.value);
+                } catch(e) {
+                    alert("Помилка в JSON інгредієнтів!");
+                    return null;
+                }
+
+                return {
+                    ...originalRecipe, // keep existing fields
+                    name: inpName.value,
+                    description: inpDesc.value,
+                    recipe_type: inpType.value,
+                    video_id: inpVideoId.value || null,
+                    properties: {
+                         temperature: inpTemp.value,
+                         time: inpTime.value
+                    },
+                    ingredients: ingredients,
+                    keywords: inpKeywords.value.split(',').map(s => s.trim()).filter(s => s),
+                    date: inpDate.value || null,
+                    cheat_code: inpCheatCode.value || null
+                };
+            }
+
             document.getElementById('adminAddBtn').onclick = () => {
                 isEditing = false;
                 editingIndex = -1;
                 editorTitle.textContent = "Новий рецепт";
-                // Template
-                jsonTextarea.value = JSON.stringify({
-                    name: "Новий рецепт",
-                    description: "",
-                    properties: { temperature: 180, time: "30хв" },
-                    ingredients: [ { _name: null, "борошно": "100г" } ],
-                    keywords: [],
-                    excluded_queries: [],
-                    date: null,
-                    cheat_code: null,
-                    recipe_type: "cookie"
-                }, null, 4);
+                originalRecipe = {}; // Reset
+                fillForm({
+                    name: "", description: "", recipe_type: "cookie", 
+                    ingredients: [ { "борошно": "100г" } ],
+                    keywords: [] 
+                });
                 editor.style.display = 'block';
+                // Scroll to editor
+                editor.scrollIntoView({behavior: "smooth"});
             };
 
             document.getElementById('adminCancelBtn').onclick = () => {
@@ -830,8 +915,10 @@ document.addEventListener("DOMContentLoaded", () => {
             };
 
             document.getElementById('adminSaveBtn').onclick = async () => {
+                const recipe = getRecipeFromForm();
+                if (!recipe) return;
+
                 try {
-                    const recipe = JSON.parse(jsonTextarea.value);
                     let url = '/api/admin/recipes/add';
                     let body = recipe;
                     
@@ -853,51 +940,54 @@ document.addEventListener("DOMContentLoaded", () => {
                         alert('Помилка збереження');
                     }
                 } catch (err) {
-                    alert('Помилка JSON: ' + err.message);
+                    alert('Помилка: ' + err.message);
                 }
             };
             
             // Add Edit/Delete buttons to each card
-            document.querySelectorAll('.card').forEach((card, index) => {
+            const cards = document.querySelectorAll('.card');
+            console.log("Found cards for admin buttons:", cards.length);
+
+            cards.forEach((card, index) => {
                 const actionsDiv = document.createElement('div');
-                actionsDiv.style = "margin-top: 10px; border-top: 1px solid #333; padding-top: 5px; display: flex; gap: 10px;";
+                actionsDiv.style = "margin-top: 10px; border-top: 1px solid #333; padding-top: 5px; display: flex; gap: 10px; z-index: 20; position: relative;";
                 actionsDiv.innerHTML = `
                     <button class="admin-edit-btn" style="background: #e67e22; border: none; padding: 5px 10px; cursor: pointer; color: white;">Ред.</button>
                     <button class="admin-delete-btn" style="background: #c0392b; border: none; padding: 5px 10px; cursor: pointer; color: white;">Видалити</button>
                     <span style="color: #666; font-size: 12px; margin-left: auto;">Index: ${index}</span>
                 `;
                 
-                actionsDiv.querySelector('.admin-edit-btn').onclick = () => {
-                    // We need the ACTUAL raw data. We can fetch it or try to reconstruct.
-                    // Better to fetch all recipes via the API, but `filteredCards` has the objects?
-                    // Ah, `filteredCards` contains DOM elements, not data.
-                    // `recipes` array is local variable in `loadRecipes`. We can't access it easily here unless we expose it or fetch again.
-                    // Let's rely on fetch.
-                    
+                // Use addEventListener instead of onclick to avoid overwriting or issues
+                const editBtn = actionsDiv.querySelector('.admin-edit-btn');
+                editBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent card click
+                    e.preventDefault();
+
+                    console.log("Edit clicked for index:", index);
+
                     fetch('/api/recipes').then(r => r.json()).then(recipes => {
-                         const recipe = recipes[index]; // Assuming index matches because DOM order matches array order initially.
-                         // WARNING: filtering breaks index mapping.
-                         // But we attached this logic inside `setupAdminPanel` which is called ONCE.
-                         // We are iterating `document.querySelectorAll('.card')`.
-                         // If we are looking at *filtered* cards, we might have issues if we use index.
-                         // But `loadRecipes` appends cards in order. So initial DOM order is correct.
-                         // Wait, `filterAndSortRecipes` hides/shows cards, but doesn't reorder DOM elements usually?
-                         // DisplayPage hides/shows.
-                         // But `filterAndSortRecipes` DOES NOT reorder DOM nodes? It creates `filteredCards` array.
-                         // So DOM order is preserved relative to the full list.
-                         // Thus, `index` in querySelectorAll('.card') corresponds to DB index 0..N?
-                         // Yes, provided `loadRecipes` appended them in order.
-                         
+                         const recipe = recipes[index]; 
+                         if (!recipe) {
+                             alert("Не вдалося знайти рецепт (можливо індекс змістився)");
+                             return;
+                         }
+
                          isEditing = true;
                          editingIndex = index;
                          editorTitle.textContent = `Редагування: ${recipe.name}`;
-                         jsonTextarea.value = JSON.stringify(recipe, null, 4);
+                         originalRecipe = recipe;
+                         fillForm(recipe);
+                         
                          editor.style.display = 'block';
                          adminContainer.scrollIntoView({ behavior: 'smooth' });
                     });
-                };
+                });
                 
-                actionsDiv.querySelector('.admin-delete-btn').onclick = async () => {
+                const deleteBtn = actionsDiv.querySelector('.admin-delete-btn');
+                deleteBtn.addEventListener('click', async (e) => {
+                     e.stopPropagation();
+                     e.preventDefault();
+
                      if (confirm("Видалити цей рецепт?")) {
                         const res = await fetch('/api/admin/recipes/delete', {
                             method: 'POST',
@@ -910,7 +1000,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             alert('Помилка видалення');
                         }
                      }
-                };
+                });
                 
                 card.querySelector('.card__body').appendChild(actionsDiv);
             });
