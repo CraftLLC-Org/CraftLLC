@@ -786,8 +786,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
                          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                             <div>
-                                <label style="display: block; color: #aaa; margin-bottom: 5px;">Відео (YouTube ID)</label>
-                                <input id="editVideoId" placeholder="dQw4w9WgXcQ" style="width: 100%; box-sizing: border-box; padding: 8px; background: #141414; border: 1px solid #444; color: white;">
+                                <label style="display: block; color: #aaa; margin-bottom: 5px;">Відео (YouTube URL або ID)</label>
+                                <input id="editVideoId" placeholder="https://youtu.be/..." style="width: 100%; box-sizing: border-box; padding: 8px; background: #141414; border: 1px solid #444; color: white;">
                             </div>
                             <div>
                                 <label style="display: block; color: #aaa; margin-bottom: 5px;">Відео (Локальне/SRC)</label>
@@ -930,6 +930,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 inpCheatCode.value = recipe.cheat_code || "";
             }
 
+            function extractVideoId(input) {
+                if (!input) return null;
+                // If it's already an ID (no slashes, length ~11 usually but can vary)
+                if (!input.includes('/') && !input.includes('.')) return input;
+                
+                try {
+                    let url = new URL(input);
+                    if (url.hostname.includes('youtube.com')) {
+                        return url.searchParams.get('v');
+                    } else if (url.hostname.includes('youtu.be')) {
+                        return url.pathname.slice(1);
+                    }
+                } catch (e) {
+                    // Not a valid URL, maybe just an ID
+                    return input;
+                }
+                return input;
+            }
+
             function getRecipeFromForm() {
                 // Parse ingredients
                 let ingredients = [];
@@ -940,13 +959,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     alert("Помилка в JSON інгредієнтів: " + e.message);
                     return null;
                 }
+                
+                const vidId = extractVideoId(inpVideoId.value);
 
                 return {
                     ...originalRecipe, // keep existing fields
                     name: inpName.value,
                     description: inpDesc.value,
                     recipe_type: inpType.value,
-                    video_id: inpVideoId.value || null,
+                    video_id: vidId || null,
                     video_src: inpVideoSrc.value || null,
                     video_link: inpVideoLink.value || null,
                     recipe_unchecked: inpUnchecked.checked || false,
