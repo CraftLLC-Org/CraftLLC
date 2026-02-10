@@ -1,4 +1,4 @@
-# ➤ CraftLLC 🍳
+# ➤ CraftLLC
 
 [![Останній рецепт](https://img.shields.io/endpoint?url=https%3A%2F%2Fcraftllc.pages.dev%2Fapi%2Frecipes%2Flatest%3Fbadge%3Dtrue&style=for-the-badge&cacheSeconds=0)](https://craftllc.pages.dev/recipes)
 [![Ліцензія](https://img.shields.io/github/license/CraftLLC/CraftLLC?style=for-the-badge&label=%D0%9B%D1%96%D1%86%D0%B5%D0%BD%D0%B7%D1%96%D1%8F)](LICENSE)
@@ -27,6 +27,8 @@
 -   **База даних**: Cloudflare Workers KV (Key-Value Storage).
 -   **Іконки**: FontAwesome 7.
 -   **Хостинг**: Cloudflare Pages.
+
+[![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/colored.png)](#--)
 
 ## ➤ 📄 Ліцензія
 
