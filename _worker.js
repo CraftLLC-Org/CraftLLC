@@ -36,7 +36,47 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
+    // --- API: Knowledge ---
+    if (cleanPath === "api/craftai/knowledge" && request.method === "GET") {
+      try {
+        const githubResponse = await fetch("https://raw.githubusercontent.com/CraftLLC/CraftLLC/refs/heads/main/_worker.js");
+        const githubCode = await githubResponse.text();
+        
+        const info = `Інформація про компанію CraftLLC:
+1. Наш сайт: https://craftllc.pages.dev
+2. Графік роботи підтримки: Сб-Нд 09:00-21:00, Пн-Пт 14:00-21:00.
+3. Власник: Андрій Рудик (Диня псевдонім, DinyaMinecraft в Minecraft).
+4. Назва компанії - CraftLLC (на честь Minecraft).
+5. YouTube: https://m.youtube.com/@CraftLLCOF
+6. Telegram канал: https://t.me/CraftLLC (з 3.02.2025).
+7. Наші боти:
+  - CraftAI (ти): @CraftLLCAIBot
+  - CraftMail: @CraftMailBot
+  - CraftLLC — Головний бот: @CraftLLCBot
+  - CraftKeyGen: @CraftKeyGenBot
+  - WordleAnswerBot: @WordleAnswerBot
+  - SSSimpleMathBot: @SSSimpleMathBot
+  - Блокувальник TikTok: @TikTokLinksBlockerBot
+  - SimpleEchoBot: @SimpleEcho1500Bot
 
+Більше про сайт:
+На ньому є декілька сторінок:
+1. Головна (https://craftllc.pages.dev/)
+2. Контакти (https://craftllc.pages.dev/contacts)
+3. Рецепти (https://craftllc.pages.dev/recipes)
+4. Бекенд:
+${githubCode}`;
+
+        return new Response(info, {
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            ...corsHeaders
+          }
+        });
+      } catch (e) {
+        return new Response("Error fetching knowledge data", { status: 500, headers: corsHeaders });
+      }
+    }
 
     // --- API: Recipes ---
     // 9. Get Recipes List
