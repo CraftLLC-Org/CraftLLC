@@ -1,3 +1,7 @@
+* {
+    cursor: url('/static/img/cursor.svg') 16 16, auto;
+}
+
 body {
     background-color: #141414;
     overflow-x: hidden;
@@ -6,7 +10,6 @@ body {
     text-align: center;
     margin: 0;
     padding-top: 70px;
-    cursor: url('/static/img/cursor.svg') 16 16, auto;
 }
 
 body::before {
