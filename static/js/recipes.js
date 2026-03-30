@@ -369,7 +369,7 @@ function processRecipeCards() {
                     if (cardTitle) {
                         cardTitle.textContent = 'Секрет'; // Change title to "Секрет"
                         cardTitle.style.pointerEvents = 'none'; // Disable clicks
-                        cardTitle.style.cursor = 'default';
+                        // cardTitle.style.cursor = 'default';
                         cardTitle.removeAttribute('href'); // Remove link
                     }
                     cardDesc.innerHTML = `Цей рецепт недоступний!<br>Він стане доступним: ${dateAttribute}<div class="card__timer">${formatCountdown(currentDiff)}</div>`;
@@ -380,7 +380,7 @@ function processRecipeCards() {
                         const originalTitle = cardTitle.dataset.originalTitle || "Торт 'Жіночий каприз'"; // Fallback
                         cardTitle.textContent = originalTitle;
                         cardTitle.style.pointerEvents = 'auto';
-                        cardTitle.style.cursor = 'pointer';
+                        // cardTitle.style.cursor = 'pointer';
                         cardTitle.href = cardTitle.dataset.originalHref || "https://youtu.be/8WZ-W1o2gLQ"; // Fallback
                     }
                     // Restore original description or remove timer
@@ -412,7 +412,7 @@ function processRecipeCards() {
                 const originalTitle = cardTitle.dataset.originalTitle || cardTitle.textContent;
                 cardTitle.textContent = originalTitle;
                 cardTitle.style.pointerEvents = 'auto';
-                cardTitle.style.cursor = 'pointer';
+                // cardTitle.style.cursor = 'pointer';
                 cardTitle.href = cardTitle.dataset.originalHref || cardTitle.href;
             }
             if (cardDesc) {
@@ -800,7 +800,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <input id="editVideoLink" placeholder="https://youtu.be/...">
                             </div>
                              <div style="display: flex; align-items: flex-end; padding-bottom: 10px;">
-                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                <label style="display: flex; align-items: center;">
                                     <input type="checkbox" id="editUnchecked">
                                     Неперевірений рецепт
                                 </label>
@@ -1248,7 +1248,7 @@ async function fetchLikes() {
                  const newBtn = btn.cloneNode(true);
                  btn.parentNode.replaceChild(newBtn, btn);
 
-                 newBtn.style.cursor = 'pointer';
+                 // newBtn.style.cursor = 'pointer';
                  newBtn.onclick = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
