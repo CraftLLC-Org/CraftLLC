@@ -1,8 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
-    return;
-    
     const urlParams = new URLSearchParams(window.location.search);
     const noSnow = urlParams.get('noSnow') === 'true';
+    const snow = urlParams.get('snow') === 'true';
 
     if (noSnow) {
         return; // Don't create snow if noSnow=true is in the URL
@@ -11,8 +10,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const today = new Date();
     const month = today.getMonth();
 
-    // Check if it's winter (December, January, or February)
-    if (month === 11 || month === 0 || month === 1) {
+    // Check if it's winter or if 'snow' parameter is true
+    if (snow || month === 11 || month === 0 || month === 1) {
         createSnowfall();
     }
 });

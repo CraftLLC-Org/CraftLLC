@@ -149,6 +149,8 @@ ${githubCode}`;
     }
 
     // --- API: Recipes ---
+    const ADMIN_USERNAME = "CraftLLC";
+
     // 9. Get Recipes List
     if (cleanPath === "api/recipes" && request.method === "GET") {
       try {
@@ -213,13 +215,12 @@ ${githubCode}`;
     }
 
     // --- API: Admin ---
-    const ADMIN_USERNAME = "CraftLLC";
-
     async function isAdmin(request) {
         const token = getCookie(request, COOKIE_NAME);
         if (!token) return false;
         const username = await env.DB.get(`session:${token}`);
         if (!username) return false;
+        if (username === ADMIN_USERNAME) return true;
         const userDataStr = await env.DB.get(`user:${username}`);
         if (!userDataStr) return false;
         const userData = JSON.parse(userDataStr);
@@ -340,7 +341,7 @@ ${githubCode}`;
         salt, 
         version: 2, 
         nickname, 
-        role: "user",
+        role: username === ADMIN_USERNAME ? "admin" : "user",
         joinedAt: new Date().toISOString() 
       };
       await env.DB.put(`user:${username}`, JSON.stringify(userData));
