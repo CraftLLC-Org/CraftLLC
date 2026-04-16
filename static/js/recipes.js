@@ -759,6 +759,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     <button id="adminAddBtn">+ Додати рецепт</button>
                 </div>
                 
+                <div class="db-management" style="margin-bottom: 30px; padding: 15px; background: rgba(255,165,22,0.1); border: 1px solid rgba(255,165,22,0.3); border-radius: 8px;">
+                    <h4 style="margin-top: 0; margin-bottom: 10px; color: #ffa516;">Керування базою даних</h4>
+                    <div style="margin-bottom: 15px; font-size: 0.9em;">
+                        Статус: <strong id="dbTypeStatus">Завантаження...</strong>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button id="dbExportBtn" class="small-btn">Експорт</button>
+                        <button id="dbImportBtn" class="small-btn">Імпорт</button>
+                        <input type="file" id="dbImportInput" accept=".json" style="display: none;">
+                        <button id="dbMigrateD1Btn" class="small-btn" style="display: none; background: #4a4a4a;">Міграція в D1</button>
+                        <button id="dbSwitchBtn" class="small-btn" style="display: none; background: #ffa516; color: #141414;">Перемкнути на ...</button>
+                    </div>
+                </div>
+                
                 <div id="adminEditor" style="display: none;">
                     <h3 id="adminEditorTitle">Редагування</h3>
                     <div style="display: grid; gap: 20px; margin-bottom: 25px;">
@@ -898,6 +912,89 @@ document.addEventListener("DOMContentLoaded", () => {
                             location.reload();
                         } else {
                             alert('Помилка міграції');
+                        }
+                    } catch (err) {
+                        alert('Невалідний JSON');
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            // DB Management Logic
+            async function updateDBStatus() {
+                const res = await fetch('/api/admin/db/status');
+                if (!res.ok) return;
+                const status = await res.json();
+                
+                const typeEl = document.getElementById('dbTypeStatus');
+                const migrateBtn = document.getElementById('dbMigrateD1Btn');
+                const switchBtn = document.getElementById('dbSwitchBtn');
+                
+                typeEl.textContent = status.type.toUpperCase() + (status.d1_available ? " (D1 доступна)" : "");
+                
+                if (status.d1_available) {
+                    migrateBtn.style.display = 'inline-block';
+                    switchBtn.style.display = 'inline-block';
+                    switchBtn.textContent = status.type === 'kv' ? 'Перейти на D1' : 'Повернутись на KV';
+                    switchBtn.onclick = async () => {
+                        const newType = status.type === 'kv' ? 'd1' : 'kv';
+                        if (!confirm(`Перемкнути базу даних на ${newType.toUpperCase()}?`)) return;
+                        
+                        const sRes = await fetch('/api/admin/db/switch', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ type: newType })
+                        });
+                        if (sRes.ok) {
+                            alert('Тип БД змінено!');
+                            location.reload();
+                        }
+                    };
+                    
+                    migrateBtn.onclick = async () => {
+                        if (!confirm('Ви впевнені, що хочете скопіювати всі дані з KV в D1? Це перезапише існуючі дані в D1.')) return;
+                        migrateBtn.disabled = true;
+                        migrateBtn.textContent = 'Міграція...';
+                        const mRes = await fetch('/api/admin/db/migrate', { method: 'POST' });
+                        if (mRes.ok) {
+                            alert('Дані успішно мігровано в D1!');
+                        } else {
+                            alert('Помилка міграції: ' + await mRes.text());
+                        }
+                        migrateBtn.disabled = false;
+                        migrateBtn.textContent = 'Міграція в D1';
+                    };
+                }
+            }
+            updateDBStatus();
+
+            document.getElementById('dbExportBtn').onclick = async () => {
+                location.href = '/api/admin/db/export';
+            };
+
+            document.getElementById('dbImportBtn').onclick = () => {
+                document.getElementById('dbImportInput').click();
+            };
+
+            document.getElementById('dbImportInput').onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = async (ev) => {
+                    try {
+                        const json = JSON.parse(ev.target.result);
+                        if (!confirm('Ви впевнені, що хочете імпортувати ці дані? Це перезапише поточну базу!')) return;
+                        
+                        const iRes = await fetch('/api/admin/db/import', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(json)
+                        });
+                        if (iRes.ok) {
+                            alert('Імпорт успішний!');
+                            location.reload();
+                        } else {
+                            alert('Помилка імпорту');
                         }
                     } catch (err) {
                         alert('Невалідний JSON');

@@ -70,6 +70,74 @@ function getCookie(request, name) {
   return null;
 }
 
+class Storage {
+  constructor(env) {
+    this.env = env;
+  }
+
+  async getType() {
+    if (!this.env.D1) return 'kv';
+    const type = await this.env.DB.get('db_type');
+    return type === 'd1' ? 'd1' : 'kv';
+  }
+
+  async get(key) {
+    const type = await this.getType();
+    if (type === 'd1') {
+      try {
+        const res = await this.env.D1.prepare("SELECT value FROM kv_store WHERE key = ?").bind(key).first();
+        return res ? res.value : null;
+      } catch (e) {
+        // Table might not exist yet
+        return null;
+      }
+    }
+    return await this.env.DB.get(key);
+  }
+
+  async put(key, value, options) {
+    const type = await this.getType();
+    if (type === 'd1' && key !== 'db_type') {
+      await this.env.D1.prepare("CREATE TABLE IF NOT EXISTS kv_store (key TEXT PRIMARY KEY, value TEXT)").run();
+      await this.env.D1.prepare("INSERT OR REPLACE INTO kv_store (key, value) VALUES (?, ?)").bind(key, value).run();
+    } else {
+      // db_type always stays in KV
+      await this.env.DB.put(key, value, options);
+    }
+  }
+
+  async delete(key) {
+    const type = await this.getType();
+    if (type === 'd1' && key !== 'db_type') {
+      await this.env.D1.prepare("DELETE FROM kv_store WHERE key = ?").bind(key).run();
+    } else {
+      await this.env.DB.delete(key);
+    }
+  }
+
+  async listKeys() {
+    const keys = [];
+    let cursor = null;
+    do {
+      const res = await this.env.DB.list({ cursor });
+      keys.push(...res.keys.map(k => k.name));
+      cursor = res.cursor;
+    } while (cursor);
+    
+    if (this.env.D1) {
+      try {
+        const d1Keys = await this.env.D1.prepare("SELECT key FROM kv_store").all();
+        if (d1Keys.results) {
+          d1Keys.results.forEach(r => {
+            if (!keys.includes(r.key)) keys.push(r.key);
+          });
+        }
+      } catch (e) {}
+    }
+    return keys;
+  }
+}
+
 function validateRecipe(recipe) {
   if (!recipe || typeof recipe !== 'object') return "Некоректні дані";
   if (!recipe.name || typeof recipe.name !== 'string' || recipe.name.length < 2 || recipe.name.length > 100) return "Назва має бути від 2 до 100 символів";
@@ -92,6 +160,7 @@ function validatePassword(password) {
 
 export default {
   async fetch(request, env) {
+    const storage = new Storage(env);
     const url = new URL(request.url);
     const cleanPath = url.pathname.replace(/^\/+|\/+$/g, '');
 
@@ -154,7 +223,7 @@ ${githubCode}`;
     // 9. Get Recipes List
     if (cleanPath === "api/recipes" && request.method === "GET") {
       try {
-         const recipesStr = await env.DB.get('recipes_data');
+         const recipesStr = await storage.get('recipes_data');
          let recipes = recipesStr ? JSON.parse(recipesStr) : [];
          
          // If no recipes in DB, try to fallback to static file if not migrated yet? 
@@ -176,7 +245,7 @@ ${githubCode}`;
     // Updating 'latest' logic to use DB
     if (cleanPath === "api/recipes/latest") {
       try {
-        const recipesStr = await env.DB.get('recipes_data');
+        const recipesStr = await storage.get('recipes_data');
         const recipes = recipesStr ? JSON.parse(recipesStr) : [];
         
         if (recipes.length === 0) {
@@ -218,10 +287,10 @@ ${githubCode}`;
     async function isAdmin(request) {
         const token = getCookie(request, COOKIE_NAME);
         if (!token) return false;
-        const username = await env.DB.get(`session:${token}`);
+        const username = await storage.get(`session:${token}`);
         if (!username) return false;
         if (username === ADMIN_USERNAME) return true;
-        const userDataStr = await env.DB.get(`user:${username}`);
+        const userDataStr = await storage.get(`user:${username}`);
         if (!userDataStr) return false;
         const userData = JSON.parse(userDataStr);
         return userData.role === "admin";
@@ -236,7 +305,7 @@ ${githubCode}`;
             if (!Array.isArray(recipes)) {
                 return new Response(JSON.stringify({ error: "Invalid format" }), { status: 400 });
             }
-            await env.DB.put('recipes_data', JSON.stringify(recipes));
+            await storage.put('recipes_data', JSON.stringify(recipes));
             return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
         } catch (e) {
              return new Response(JSON.stringify({ error: "Migration failed" }), { status: 500 });
@@ -252,13 +321,13 @@ ${githubCode}`;
             const validationError = validateRecipe(newRecipe);
             if (validationError) return new Response(JSON.stringify({ error: validationError }), { status: 400 });
 
-            const recipesStr = await env.DB.get('recipes_data');
+            const recipesStr = await storage.get('recipes_data');
             let recipes = recipesStr ? JSON.parse(recipesStr) : [];
             
             // Unshift to add to the beginning (latest)
             recipes.unshift(newRecipe);
             
-            await env.DB.put('recipes_data', JSON.stringify(recipes));
+            await storage.put('recipes_data', JSON.stringify(recipes));
             return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
         } catch (e) {
             return new Response(JSON.stringify({ error: "Add failed" }), { status: 500 });
@@ -274,12 +343,12 @@ ${githubCode}`;
             const validationError = validateRecipe(recipe);
             if (validationError) return new Response(JSON.stringify({ error: validationError }), { status: 400 });
 
-            const recipesStr = await env.DB.get('recipes_data');
+            const recipesStr = await storage.get('recipes_data');
             let recipes = recipesStr ? JSON.parse(recipesStr) : [];
             
             if (index >= 0 && index < recipes.length) {
                 recipes[index] = recipe;
-                await env.DB.put('recipes_data', JSON.stringify(recipes));
+                await storage.put('recipes_data', JSON.stringify(recipes));
                 return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
             } else {
                 return new Response(JSON.stringify({ error: "Recipe not found" }), { status: 404 });
@@ -295,18 +364,97 @@ ${githubCode}`;
          
         try {
             const { index } = await request.json();
-            const recipesStr = await env.DB.get('recipes_data');
+            const recipesStr = await storage.get('recipes_data');
             let recipes = recipesStr ? JSON.parse(recipesStr) : [];
             
             if (index >= 0 && index < recipes.length) {
                 recipes.splice(index, 1);
-                await env.DB.put('recipes_data', JSON.stringify(recipes));
+                await storage.put('recipes_data', JSON.stringify(recipes));
                 return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
             } else {
                 return new Response(JSON.stringify({ error: "Recipe not found" }), { status: 404 });
             }
         } catch (e) {
             return new Response(JSON.stringify({ error: "Delete failed" }), { status: 500 });
+        }
+    }
+
+    // --- API: DB Management ---
+    
+    // 14. DB Status
+    if (cleanPath === "api/admin/db/status" && request.method === "GET") {
+        if (!(await isAdmin(request))) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+        return new Response(JSON.stringify({
+            type: await storage.getType(),
+            d1_available: !!env.D1
+        }), { headers: { "Content-Type": "application/json" }});
+    }
+
+    // 15. DB Switch
+    if (cleanPath === "api/admin/db/switch" && request.method === "POST") {
+        if (!(await isAdmin(request))) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+        const { type } = await request.json();
+        if (type !== 'kv' && type !== 'd1') return new Response("Invalid type", { status: 400 });
+        if (type === 'd1' && !env.D1) return new Response("D1 not connected", { status: 400 });
+        
+        await env.DB.put('db_type', type);
+        return new Response(JSON.stringify({ success: true }));
+    }
+
+    // 16. DB Migrate (KV -> D1)
+    if (cleanPath === "api/admin/db/migrate" && request.method === "POST") {
+        if (!(await isAdmin(request))) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+        if (!env.D1) return new Response("D1 not connected", { status: 400 });
+
+        try {
+            const keysRes = await env.DB.list();
+            const keys = keysRes.keys.map(k => k.name);
+            
+            await env.D1.prepare("CREATE TABLE IF NOT EXISTS kv_store (key TEXT PRIMARY KEY, value TEXT)").run();
+            
+            for (const key of keys) {
+                if (key === 'db_type') continue;
+                const value = await env.DB.get(key);
+                if (value) {
+                    await env.D1.prepare("INSERT OR REPLACE INTO kv_store (key, value) VALUES (?, ?)").bind(key, value).run();
+                }
+            }
+            return new Response(JSON.stringify({ success: true }));
+        } catch (e) {
+            return new Response(e.message, { status: 500 });
+        }
+    }
+
+    // 17. DB Export
+    if (cleanPath === "api/admin/db/export" && request.method === "GET") {
+        if (!(await isAdmin(request))) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+        
+        const data = {};
+        const keys = await storage.listKeys();
+        for (const key of keys) {
+            data[key] = await storage.get(key);
+        }
+        return new Response(JSON.stringify(data), {
+            headers: {
+                "Content-Type": "application/json",
+                "Content-Disposition": `attachment; filename="db_export_${new Date().toISOString().slice(0,10)}.json"`
+            }
+        });
+    }
+
+    // 18. DB Import
+    if (cleanPath === "api/admin/db/import" && request.method === "POST") {
+        if (!(await isAdmin(request))) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+        
+        try {
+            const data = await request.json();
+            for (const [key, value] of Object.entries(data)) {
+                if (key === 'db_type') continue;
+                await storage.put(key, typeof value === 'string' ? value : JSON.stringify(value));
+            }
+            return new Response(JSON.stringify({ success: true }));
+        } catch (e) {
+            return new Response(e.message, { status: 500 });
         }
     }
 
@@ -328,7 +476,7 @@ ${githubCode}`;
         return new Response(JSON.stringify({ error: "Некоректне ім'я користувача" }), { status: 400 });
       }
 
-      const existingUser = await env.DB.get(`user:${username}`);
+      const existingUser = await storage.get(`user:${username}`);
       if (existingUser) {
         return new Response(JSON.stringify({ error: "Користувач вже існує" }), { status: 400 });
       }
@@ -344,7 +492,7 @@ ${githubCode}`;
         role: username === ADMIN_USERNAME ? "admin" : "user",
         joinedAt: new Date().toISOString() 
       };
-      await env.DB.put(`user:${username}`, JSON.stringify(userData));
+      await storage.put(`user:${username}`, JSON.stringify(userData));
 
       return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
     }
@@ -352,7 +500,7 @@ ${githubCode}`;
     // 2. Login
     if (cleanPath === "api/auth/login" && request.method === "POST") {
       const { username, password } = await request.json();
-      const userDataStr = await env.DB.get(`user:${username}`);
+      const userDataStr = await storage.get(`user:${username}`);
       if (!userDataStr) {
         return new Response(JSON.stringify({ error: "Невірний логін або пароль" }), { status: 401 });
       }
@@ -375,11 +523,11 @@ ${githubCode}`;
         userData.passwordHash = await hashPasswordPBKDF2(password, salt);
         userData.salt = salt;
         userData.version = 2;
-        await env.DB.put(`user:${username}`, JSON.stringify(userData));
+        await storage.put(`user:${username}`, JSON.stringify(userData));
       }
 
       const token = crypto.randomUUID();
-      await env.DB.put(`session:${token}`, username, { expirationTtl: 86400 * 7 }); // 1 week
+      await storage.put(`session:${token}`, username, { expirationTtl: 86400 * 7 }); // 1 week
 
       return new Response(JSON.stringify({ success: true, recommendation }), {
         headers: {
@@ -395,14 +543,14 @@ ${githubCode}`;
       const token = getCookie(request, COOKIE_NAME);
       if (!token) return new Response(JSON.stringify({ error: "Спершу увійдіть в акаунт" }), { status: 401 });
       
-      const username = await env.DB.get(`session:${token}`);
+      const username = await storage.get(`session:${token}`);
       if (!username) return new Response(JSON.stringify({ error: "Сесія недійсна" }), { status: 401 });
 
       if (code === env.ADMIN_SECRET && env.ADMIN_SECRET) {
-        const userDataStr = await env.DB.get(`user:${username}`);
+        const userDataStr = await storage.get(`user:${username}`);
         const userData = JSON.parse(userDataStr);
         userData.role = "admin";
-        await env.DB.put(`user:${username}`, JSON.stringify(userData));
+        await storage.put(`user:${username}`, JSON.stringify(userData));
         return new Response(JSON.stringify({ success: true, message: "Тепер ви адміністратор!" }), { headers: { "Content-Type": "application/json" } });
       }
       return new Response(JSON.stringify({ error: "Невірний код" }), { status: 403 });
@@ -413,10 +561,10 @@ ${githubCode}`;
       const token = getCookie(request, COOKIE_NAME);
       if (!token) return new Response(JSON.stringify({ error: "Неавторизовано" }), { status: 401 });
 
-      const username = await env.DB.get(`session:${token}`);
+      const username = await storage.get(`session:${token}`);
       if (!username) return new Response(JSON.stringify({ error: "Сесія закінчилася" }), { status: 401 });
 
-      const userDataStr = await env.DB.get(`user:${username}`);
+      const userDataStr = await storage.get(`user:${username}`);
       const userData = JSON.parse(userDataStr);
       delete userData.passwordHash; // Don't return password hash
 
@@ -426,7 +574,7 @@ ${githubCode}`;
     // 4. Logout
     if (cleanPath === "api/auth/logout" && request.method === "POST") {
       const token = getCookie(request, COOKIE_NAME);
-      if (token) await env.DB.delete(`session:${token}`);
+      if (token) await storage.delete(`session:${token}`);
       
       return new Response(JSON.stringify({ success: true }), {
         headers: {
@@ -441,11 +589,11 @@ ${githubCode}`;
       const token = getCookie(request, COOKIE_NAME);
       if (!token) return new Response(JSON.stringify({ error: "Неавторизовано" }), { status: 401 });
 
-      const username = await env.DB.get(`session:${token}`);
+      const username = await storage.get(`session:${token}`);
       if (!username) return new Response(JSON.stringify({ error: "Сесія закінчилася" }), { status: 401 });
 
       const { nickname, currentPassword, newPassword } = await request.json();
-      const userDataStr = await env.DB.get(`user:${username}`);
+      const userDataStr = await storage.get(`user:${username}`);
       const userData = JSON.parse(userDataStr);
 
       // Verify current password
@@ -470,7 +618,7 @@ ${githubCode}`;
         userData.version = 2;
       }
 
-      await env.DB.put(`user:${username}`, JSON.stringify(userData));
+      await storage.put(`user:${username}`, JSON.stringify(userData));
 
       return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
     }
@@ -480,11 +628,11 @@ ${githubCode}`;
       const token = getCookie(request, COOKIE_NAME);
       if (!token) return new Response(JSON.stringify({ error: "Неавторизовано" }), { status: 401 });
 
-      const username = await env.DB.get(`session:${token}`);
+      const username = await storage.get(`session:${token}`);
       if (!username) return new Response(JSON.stringify({ error: "Сесія закінчилася" }), { status: 401 });
 
       const { password } = await request.json();
-      const userDataStr = await env.DB.get(`user:${username}`);
+      const userDataStr = await storage.get(`user:${username}`);
       const userData = JSON.parse(userDataStr);
 
       const isCorrect = await verifyPassword(password, userData);
@@ -492,8 +640,8 @@ ${githubCode}`;
         return new Response(JSON.stringify({ error: "Невірний пароль" }), { status: 401 });
       }
 
-      await env.DB.delete(`user:${username}`);
-      await env.DB.delete(`session:${token}`);
+      await storage.delete(`user:${username}`);
+      await storage.delete(`session:${token}`);
 
       return new Response(JSON.stringify({ success: true }), {
         headers: {
@@ -511,15 +659,15 @@ ${githubCode}`;
       let isAuthenticated = false;
       
       if (token) {
-        const username = await env.DB.get(`session:${token}`);
+        const username = await storage.get(`session:${token}`);
         if (username) {
            isAuthenticated = true;
-           const userLikesStr = await env.DB.get(`user_likes:${username}`);
+           const userLikesStr = await storage.get(`user_likes:${username}`);
            userLikes = userLikesStr ? JSON.parse(userLikesStr) : [];
         }
       }
 
-      const globalCountsStr = await env.DB.get('global_likes_counts');
+      const globalCountsStr = await storage.get('global_likes_counts');
       const counts = globalCountsStr ? JSON.parse(globalCountsStr) : {};
 
       return new Response(JSON.stringify({ userLikes, counts, isAuthenticated }), {
@@ -535,21 +683,21 @@ ${githubCode}`;
       const token = getCookie(request, COOKIE_NAME);
       if (!token) return new Response(JSON.stringify({ error: "Неавторизовано" }), { status: 401 });
 
-      const username = await env.DB.get(`session:${token}`);
+      const username = await storage.get(`session:${token}`);
       if (!username) return new Response(JSON.stringify({ error: "Сесія закінчилася" }), { status: 401 });
 
       const { recipeName } = await request.json();
       if (!recipeName) return new Response(JSON.stringify({ error: "Не вказано назву рецепту" }), { status: 400 });
 
       // Check if recipe exists
-      const recipesStr = await env.DB.get('recipes_data');
+      const recipesStr = await storage.get('recipes_data');
       const recipes = recipesStr ? JSON.parse(recipesStr) : [];
       if (!recipes.some(r => r.name === recipeName)) {
         return new Response(JSON.stringify({ error: "Рецепт не знайдено" }), { status: 404 });
       }
 
       // Update User Likes
-      const userLikesStr = await env.DB.get(`user_likes:${username}`);
+      const userLikesStr = await storage.get(`user_likes:${username}`);
       let userLikes = userLikesStr ? JSON.parse(userLikesStr) : [];
       let isLiked = false;
 
@@ -560,10 +708,10 @@ ${githubCode}`;
         userLikes.push(recipeName);
         isLiked = true;
       }
-      await env.DB.put(`user_likes:${username}`, JSON.stringify(userLikes));
+      await storage.put(`user_likes:${username}`, JSON.stringify(userLikes));
 
       // Update Global Counts
-      const globalCountsStr = await env.DB.get('global_likes_counts');
+      const globalCountsStr = await storage.get('global_likes_counts');
       let counts = globalCountsStr ? JSON.parse(globalCountsStr) : {};
       
       if (counts[recipeName] === undefined) counts[recipeName] = 0;
@@ -574,7 +722,7 @@ ${githubCode}`;
         counts[recipeName] = Math.max(0, counts[recipeName] - 1);
       }
       
-      await env.DB.put('global_likes_counts', JSON.stringify(counts));
+      await storage.put('global_likes_counts', JSON.stringify(counts));
 
       return new Response(JSON.stringify({ success: true, isLiked, newCount: counts[recipeName] }), {
          headers: { 
