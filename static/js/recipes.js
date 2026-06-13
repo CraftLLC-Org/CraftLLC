@@ -572,7 +572,7 @@ function generateRecipeCard(recipe, index) {
                 <i class="far fa-heart"></i>
             </button>
             <span class="card__like-count" data-recipe-name="${recipeNameAttr}">0</span>
-            <button class="card__share-btn" aria-label="Поділитися" data-recipe-name="${recipeNameAttr}" style="background: none; border: none; color: #888; font-size: 18px; margin-left: auto; cursor: pointer; padding: 0; transition: color 0.3s;">
+            <button class="card__share-btn" aria-label="Поділитися" data-recipe-name="${recipeNameAttr}">
                 <i class="fas fa-share-alt"></i>
             </button>
         </div>
@@ -725,7 +725,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (shareBtn) {
             const recipeName = shareBtn.dataset.recipeName;
             if (recipeName) {
-                const url = new URL(window.location.href);
+                let baseUrl = window.location.href;
+                if (inIframe()) {
+                    try {
+                        baseUrl = window.parent.location.href;
+                    } catch (err) {
+                        baseUrl = window.location.origin + '/recipes';
+                    }
+                }
+                const url = new URL(baseUrl);
                 url.searchParams.set('recipe', recipeName);
                 navigator.clipboard.writeText(url.toString()).then(() => {
                     const icon = shareBtn.querySelector('i');

@@ -97,8 +97,19 @@ input {
     margin-right: 8px;
 }
 
+.card__share-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: white;
+    opacity: 0.75;
+    cursor: pointer;
+    padding: 0;
+    margin-left: auto;
+}
+
 .card__share-btn:hover {
-    color: #ffa516 !important;
+    opacity: 1;
 }
 
 .card__like-btn.liked {
