@@ -565,8 +565,9 @@ function generateRecipeCard(recipe, index) {
             ${ingredientsHtml}
         </p>
         <div class="card__share-msg" style="display: none; margin-top: 10px; padding: 8px; background: rgba(255,165,22,0.1); border-radius: 8px; color: #ffa516; font-size: 14px; text-align: center;">
-            <i class="fas fa-link"></i> Ви перейшли до цього рецепту за прямим посиланням.
+            <i class="fas fa-link"></i> Ви перейшли на цей рецепт за прямим посиланням.
         </div>
+        ${recipe.recipe_unchecked ? '<div class="card__unchecked-msg"><i class="fas fa-exclamation-triangle"></i> Ми ще не перевірили цей рецепт. Краще зачекати поки ми його перевіримо, перед тим як починати готувати.</div>' : ''}
         <div class="card__like-container">
             <button class="card__like-btn" aria-label="Лайкнути" data-recipe-name="${recipe.name.replace(/"/g, '&quot;')}">
                 <i class="far fa-heart"></i>
