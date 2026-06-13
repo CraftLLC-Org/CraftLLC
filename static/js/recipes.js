@@ -552,8 +552,8 @@ function generateRecipeCard(recipe, index) {
         }
     }
 
-    const recipeNameAttr = recipe.name.replace(/"/g, '&quot;');
-    card.dataset.recipeName = recipe.name;
+    const recipeId = recipe.id;
+    card.dataset.recipeId = recipeId;
 
     card.innerHTML = `
     ${videoElement}
@@ -568,11 +568,11 @@ function generateRecipeCard(recipe, index) {
             <i class="fas fa-link"></i> Ви перейшли до цього рецепту за прямим посиланням.
         </div>
         <div class="card__like-container">
-            <button class="card__like-btn" aria-label="Лайкнути" data-recipe-name="${recipeNameAttr}">
+            <button class="card__like-btn" aria-label="Лайкнути" data-recipe-name="${recipe.name.replace(/"/g, '&quot;')}">
                 <i class="far fa-heart"></i>
             </button>
-            <span class="card__like-count" data-recipe-name="${recipeNameAttr}">0</span>
-            <button class="card__share-btn" aria-label="Поділитися" data-recipe-name="${recipeNameAttr}">
+            <span class="card__like-count" data-recipe-name="${recipe.name.replace(/"/g, '&quot;')}">0</span>
+            <button class="card__share-btn" aria-label="Поділитися" data-recipe-id="${recipeId}">
                 <i class="fas fa-share-alt"></i>
             </button>
         </div>
@@ -723,18 +723,11 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener('click', function(e) {
         const shareBtn = e.target.closest('.card__share-btn');
         if (shareBtn) {
-            const recipeName = shareBtn.dataset.recipeName;
-            if (recipeName) {
-                let baseUrl = window.location.href;
-                if (inIframe()) {
-                    try {
-                        baseUrl = window.parent.location.href;
-                    } catch (err) {
-                        baseUrl = window.location.origin + '/recipes';
-                    }
-                }
+            const recipeId = shareBtn.dataset.recipeId;
+            if (recipeId !== undefined) {
+                let baseUrl = window.location.origin + '/recipes';
                 const url = new URL(baseUrl);
-                url.searchParams.set('recipe', recipeName);
+                url.searchParams.set('recipeId', recipeId);
                 navigator.clipboard.writeText(url.toString()).then(() => {
                     const icon = shareBtn.querySelector('i');
                     const originalClass = icon.className;
@@ -750,12 +743,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // Handle direct recipe link
     function handleDirectRecipeLink() {
         const urlParams = new URLSearchParams(window.location.search);
-        const recipeName = urlParams.get('recipe');
-        if (recipeName) {
+        const recipeId = urlParams.get('recipeId');
+        if (recipeId !== null) {
             setTimeout(() => {
                 const cards = document.querySelectorAll('.card');
                 for (const card of cards) {
-                    if (card.dataset.recipeName === recipeName) {
+                    if (String(card.dataset.recipeId) === recipeId) {
                         card.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         const msg = card.querySelector('.card__share-msg');
                         if (msg) msg.style.display = 'block';
@@ -1223,7 +1216,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     if (isEditing) {
                         url = '/api/admin/recipes/edit';
-                        body = { index: editingIndex, recipe };
+                        body = { id: editingIndex, recipe };
                     }
 
                     const res = await fetch(url, {
@@ -1246,13 +1239,14 @@ document.addEventListener("DOMContentLoaded", () => {
             // Add Edit/Delete buttons to each card
             const cards = document.querySelectorAll('.card');
             
-            cards.forEach((card, index) => {
+            cards.forEach((card) => {
+                const recipeId = card.dataset.recipeId;
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'admin-card-actions';
                 actionsDiv.innerHTML = `
                     <button class="admin-edit-btn">Редагувати</button>
                     <button class="admin-delete-btn">Видалити</button>
-                    <div class="admin-card-id">ID: ${index}</div>
+                    <div class="admin-card-id">ID: ${recipeId}</div>
                 `;
                 
                 const editBtn = actionsDiv.querySelector('.admin-edit-btn');
@@ -1261,14 +1255,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     e.preventDefault();
 
                     fetch('/api/recipes').then(r => r.json()).then(recipes => {
-                         const recipe = recipes[index]; 
+                         const recipe = recipes.find(r => r.id === recipeId);
                          if (!recipe) {
                              alert("Не вдалося знайти рецепт");
                              return;
                          }
 
                          isEditing = true;
-                         editingIndex = index;
+                         editingIndex = recipeId;
                          editorTitle.textContent = `Редагування: ${recipe.name}`;
                          originalRecipe = recipe;
                          fillForm(recipe);
@@ -1287,7 +1281,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         const res = await fetch('/api/admin/recipes/delete', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ index })
+                            body: JSON.stringify({ id: recipeId })
                         });
                         if (res.ok) {
                             location.reload();

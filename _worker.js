@@ -257,13 +257,22 @@ ${githubCode}`;
     if (cleanPath === "api/recipes" && request.method === "GET") {
       try {
          const recipesStr = await storage.get('recipes_data');
-         let recipes = recipesStr ? JSON.parse(recipesStr) : [];
-         
-         // If no recipes in DB, try to fallback to static file if not migrated yet? 
-         // User asked to migrate list.json. If DB is empty, return empty list or handle client side.
-         // Let's just return what's in DB.
-         
-         return new Response(JSON.stringify(recipes), {
+          let recipes = recipesStr ? JSON.parse(recipesStr) : [];
+          
+          // Ensure every recipe has an id
+          let needsSave = false;
+          recipes = recipes.map(r => {
+            if (!r.id || typeof r.id !== 'string') {
+              r.id = 'r_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 8);
+              needsSave = true;
+            }
+            return r;
+          });
+          if (needsSave) {
+            await storage.put('recipes_data', JSON.stringify(recipes));
+          }
+          
+          return new Response(JSON.stringify(recipes), {
           headers: { 
             "Content-Type": "application/json",
             ...corsHeaders
@@ -334,10 +343,16 @@ ${githubCode}`;
         if (!(await isAdmin(request))) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: corsHeaders });
         
         try {
-            const recipes = await request.json();
+            let recipes = await request.json();
             if (!Array.isArray(recipes)) {
                 return new Response(JSON.stringify({ error: "Invalid format" }), { status: 400, headers: corsHeaders });
             }
+            recipes = recipes.map(r => {
+              if (!r.id || typeof r.id !== 'string') {
+                r.id = 'r_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 8);
+              }
+              return r;
+            });
             await storage.put('recipes_data', JSON.stringify(recipes));
             return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
         } catch (e) {
@@ -353,6 +368,9 @@ ${githubCode}`;
             const newRecipe = await request.json();
             const validationError = validateRecipe(newRecipe);
             if (validationError) return new Response(JSON.stringify({ error: validationError }), { status: 400, headers: corsHeaders });
+
+            // Assign a unique id
+            newRecipe.id = 'r_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 8);
 
             const recipesStr = await storage.get('recipes_data');
             let recipes = recipesStr ? JSON.parse(recipesStr) : [];
@@ -372,15 +390,17 @@ ${githubCode}`;
         if (!(await isAdmin(request))) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: corsHeaders });
         
         try {
-            const { index, recipe } = await request.json();
+            const { id, recipe } = await request.json();
             const validationError = validateRecipe(recipe);
             if (validationError) return new Response(JSON.stringify({ error: validationError }), { status: 400, headers: corsHeaders });
 
             const recipesStr = await storage.get('recipes_data');
             let recipes = recipesStr ? JSON.parse(recipesStr) : [];
             
-            if (index >= 0 && index < recipes.length) {
-                recipes[index] = recipe;
+            const idx = recipes.findIndex(r => r.id === id);
+            if (idx !== -1) {
+                recipe.id = id; // Preserve the id
+                recipes[idx] = recipe;
                 await storage.put('recipes_data', JSON.stringify(recipes));
                 return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
             } else {
@@ -396,12 +416,13 @@ ${githubCode}`;
         if (!(await isAdmin(request))) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: corsHeaders });
          
         try {
-            const { index } = await request.json();
+            const { id } = await request.json();
             const recipesStr = await storage.get('recipes_data');
             let recipes = recipesStr ? JSON.parse(recipesStr) : [];
             
-            if (index >= 0 && index < recipes.length) {
-                recipes.splice(index, 1);
+            const idx = recipes.findIndex(r => r.id === id);
+            if (idx !== -1) {
+                recipes.splice(idx, 1);
                 await storage.put('recipes_data', JSON.stringify(recipes));
                 return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
             } else {
