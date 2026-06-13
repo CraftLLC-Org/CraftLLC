@@ -509,11 +509,13 @@ function generateRecipeCard(recipe, index) {
         } else {
             ingredientsHtml += `<br>Інградієнти:<br>`;
         }
+        ingredientsHtml += `<table class="ingredients-table">`;
         for (const [name, amount] of Object.entries(ingredientGroup)) {
             if (name !== '_name') {
-                ingredientsHtml += `${name} - ${amount || ''}<br>`;
+                ingredientsHtml += `<tr><td>${name}</td><td>${amount || ''}</td></tr>`;
             }
         }
+        ingredientsHtml += `</table>`;
     });
 
     let propertiesHtml = '';
@@ -550,6 +552,9 @@ function generateRecipeCard(recipe, index) {
         }
     }
 
+    const recipeNameAttr = recipe.name.replace(/"/g, '&quot;');
+    card.dataset.recipeName = recipe.name;
+
     card.innerHTML = `
     ${videoElement}
     <div class="card__body">
@@ -559,11 +564,17 @@ function generateRecipeCard(recipe, index) {
             ${propertiesHtml}
             ${ingredientsHtml}
         </p>
+        <div class="card__share-msg" style="display: none; margin-top: 10px; padding: 8px; background: rgba(255,165,22,0.1); border-radius: 8px; color: #ffa516; font-size: 14px; text-align: center;">
+            <i class="fas fa-link"></i> Ви перейшли до цього рецепту за прямим посиланням.
+        </div>
         <div class="card__like-container">
-            <button class="card__like-btn" aria-label="Лайкнути" data-recipe-name="${recipe.name.replace(/"/g, '&quot;')}">
+            <button class="card__like-btn" aria-label="Лайкнути" data-recipe-name="${recipeNameAttr}">
                 <i class="far fa-heart"></i>
             </button>
-            <span class="card__like-count" data-recipe-name="${recipe.name.replace(/"/g, '&quot;')}">0</span>
+            <span class="card__like-count" data-recipe-name="${recipeNameAttr}">0</span>
+            <button class="card__share-btn" aria-label="Поділитися" data-recipe-name="${recipeNameAttr}" style="background: none; border: none; color: #888; font-size: 18px; margin-left: auto; cursor: pointer; padding: 0; transition: color 0.3s;">
+                <i class="fas fa-share-alt"></i>
+            </button>
         </div>
     </div>
 `;
@@ -708,6 +719,45 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Share button handler
+    document.addEventListener('click', function(e) {
+        const shareBtn = e.target.closest('.card__share-btn');
+        if (shareBtn) {
+            const recipeName = shareBtn.dataset.recipeName;
+            if (recipeName) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('recipe', recipeName);
+                navigator.clipboard.writeText(url.toString()).then(() => {
+                    const icon = shareBtn.querySelector('i');
+                    const originalClass = icon.className;
+                    icon.className = 'fas fa-check';
+                    setTimeout(() => { icon.className = originalClass; }, 2000);
+                }).catch(() => {
+                    alert('Не вдалося скопіювати посилання');
+                });
+            }
+        }
+    });
+
+    // Handle direct recipe link
+    function handleDirectRecipeLink() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const recipeName = urlParams.get('recipe');
+        if (recipeName) {
+            setTimeout(() => {
+                const cards = document.querySelectorAll('.card');
+                for (const card of cards) {
+                    if (card.dataset.recipeName === recipeName) {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        const msg = card.querySelector('.card__share-msg');
+                        if (msg) msg.style.display = 'block';
+                        break;
+                    }
+                }
+            }, 500);
+        }
+    }
+
     console.log("DOMContentLoaded event fired.");
     const searchInput = document.getElementById('recipeSearch');
     const sortSelect = document.getElementById('recipeSort');
@@ -736,6 +786,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         setupAdminPanel();
         fetchLikes();
+        handleDirectRecipeLink();
     });
 
     const isLight = urlParams.get('light') === 'true';
@@ -753,7 +804,7 @@ document.addEventListener("DOMContentLoaded", () => {
             adminContainer.id = 'adminPanel';
             adminContainer.innerHTML = `
                 <h2>Адмін Панель</h2>
-                <div class="admin-controls" style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+                <div class="admin-controls" style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
                     <button id="adminMigrateBtn">Імпортувати list.json</button>
                     <input type="file" id="adminMigrateInput" accept=".json" style="display: none;">
                     <button id="adminAddBtn">+ Додати рецепт</button>
@@ -764,7 +815,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div style="margin-bottom: 15px; font-size: 0.9em;">
                         Статус: <strong id="dbTypeStatus">Завантаження...</strong>
                     </div>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
                         <button id="dbExportBtn" class="small-btn">Експорт</button>
                         <button id="dbImportBtn" class="small-btn">Імпорт</button>
                         <input type="file" id="dbImportInput" accept=".json" style="display: none;">
@@ -848,7 +899,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         </div>
                     </div>
                     
-                    <div style="display: flex; gap: 15px; justify-content: flex-end;">
+                    <div style="display: flex; gap: 15px; justify-content: center;">
                         <button id="adminCancelBtn">Скасувати</button>
                         <button id="adminSaveBtn">Зберегти</button>
                     </div>

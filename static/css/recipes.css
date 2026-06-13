@@ -92,9 +92,13 @@ input {
     border: none;
     font-size: 24px;
     color: #888;
-    transition: color 0.3s, transform 0.2s;
+    transition: color 0.3s;
     padding: 0;
     margin-right: 8px;
+}
+
+.card__share-btn:hover {
+    color: #ffa516 !important;
 }
 
 .card__like-btn.liked {
@@ -102,7 +106,6 @@ input {
 }
 
 .card__like-btn:hover {
-    transform: scale(1.1);
     color: #e74c3c;
 }
 
@@ -248,6 +251,24 @@ select {
     }
 }
 
+/* Ingredients Table */
+.ingredients-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 5px;
+}
+
+.ingredients-table td {
+    padding: 4px 8px;
+    border: none;
+    text-align: left;
+}
+
+.ingredients-table td:last-child {
+    text-align: right;
+    color: #ffa516;
+}
+
 /* --- Admin Panel Styles --- */
 #adminPanel {
     background-color: #141414; /* Same as .card */
@@ -283,12 +304,6 @@ select {
     padding: 10px 20px;
     border-radius: 10px; /* Same as input/select */
     font-size: 16px;
-    transition: transform 0.2s, opacity 0.2s;
-}
-
-#adminPanel button:hover {
-    opacity: 0.9;
-    transform: scale(1.02);
 }
 
 #adminMigrateBtn {
@@ -383,22 +398,15 @@ select {
     color: white;
     border-radius: 8px;
     font-size: 14px;
-    transition: background 0.2s;
 }
 
 .admin-edit-btn {
     background: linear-gradient(to right, #FFA600, #FFBB00);
     color: black;
 }
-.admin-edit-btn:hover {
-    opacity: 0.9;
-}
 
 .admin-delete-btn {
     background: #c0392b;
-}
-.admin-delete-btn:hover {
-    background: #e74c3c;
 }
 
 .admin-card-id {
