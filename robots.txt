@@ -2,6 +2,8 @@ User-agent: *
 Allow: /
 Allow: /contacts
 Allow: /recipes
+Allow: /account
 Disallow: /craftantivirus
 Disallow: /.well-known/*
 Disallow: /5d9dc8a43a7545e894c739f97f7007a2.txt
+Disallow: /404.html
