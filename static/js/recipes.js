@@ -791,8 +791,6 @@ document.addEventListener("DOMContentLoaded", () => {
         handleDirectRecipeLink();
     });
 
-    const isLight = urlParams.get('light') === 'true';
-
     async function setupAdminPanel() {
         try {
             const meRes = await fetch('/api/auth/me');
@@ -1297,35 +1295,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (e) {
             console.error("Admin check failed", e);
-        }
-    }
-
-    if (isLight) {
-        document.body.style.background = 'none';
-        document.body.style.color = 'black';
-        const footer = document.getElementById("footerID");
-        if (footer) {
-            footer.style.background = '#aaa';
-        }
-
-        const allLinks = document.querySelectorAll('a');
-        allLinks.forEach(link => {
-            link.style.color = 'black';
-            const linkUrl = new URL(link.href);
-            if (!linkUrl.searchParams.has('light')) {
-                linkUrl.searchParams.set('light', 'true');
-                link.href = linkUrl.toString();
-            }
-        });
-        const searchInputStyle = document.getElementById('recipeSearch');
-        const sortSelectStyle = document.getElementById('recipeSort');
-        if (searchInputStyle) {
-            searchInputStyle.style.backgroundColor = '#f0f0f0';
-            searchInputStyle.style.color = '#333';
-        }
-        if (sortSelectStyle) {
-            sortSelectStyle.style.backgroundColor = '#f0f0f0';
-            sortSelectStyle.style.color = '#333';
         }
     }
 });
